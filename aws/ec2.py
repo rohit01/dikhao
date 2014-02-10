@@ -1,34 +1,27 @@
-######## BOTO ########
+import boto.ec2
 
-def get_connection(region_name):
-    try:
-        conn = boto.ec2.connect_to_region(region_name=region_name,
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-    except Exception, e:
-        print e
-        conn = None
-    return conn
+def get_region_list():
+    regions = boto.ec2.get_regions('ec2')
+    return [r.name for r in regions]
 
 
-def get_all_running_instances(region):
-    conn = get_connection(region)
-    running_instances = conn.get_all_instance_status()
-    id_list = []
-    for r in running_instances:
-        id_list.append(r.id)
-    reservations = conn.get_all_instances(instance_ids=id_list)
-    instance_list = []
-    for r in reservations:
-        for i in r.instances:
-            instance_list.append(i)
-    return instance_list
+class Ec2Handler(object):
+    def __init__(self, apikey, apisecret, region):
+        self.region = region
+        self.connection = boto.ec2.connect_to_region(
+            region_name=self.region,
+            aws_access_key_id=apikey,
+            aws_secret_access_key=apisecret
+        )
 
-
-def fetch_and_save_aws_instance_details():
-    for region in REGION_LIST:
-        try:
-            instance_list = get_all_running_instances(region)
-        except Exception as e:
-            print str(e)
-        save_aws_instance_details(instance_list)
+    def get_all_running_instances(self):
+        running_instances = self.connection.get_all_instance_status()
+        id_list = []
+        for r in running_instances:
+            id_list.append(r.id)
+        reservations = self.connection.get_all_instances(instance_ids=id_list)
+        instance_list = []
+        for r in reservations:
+            for i in r.instances:
+                instance_list.append(i)
+        return instance_list

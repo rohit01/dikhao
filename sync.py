@@ -5,10 +5,15 @@
 #
 # Author - @rohit01
 
+import gevent
+import gevent.monkey
+gevent.monkey.patch_all()
+
 import optparse
 import util
 import sys
 import os
+import aws.ec2
 import aws.route53
 import database.redis_handler
 
@@ -109,7 +114,8 @@ def validate_arguments(option_args):
     return arguments
 
 
-def sync_route53(route53_handler, redis_handler, hosted_zones):
+def sync_route53(route53_handler, redis_handler, hosted_zones, expire, ttl):
+    ## TODO: expire, ttl
     route53_zone_details = route53_handler.fetch_route53_zone_details(
         hosted_zones)
     for zone_name, zone_id in route53_zone_details.items():
@@ -128,6 +134,29 @@ def sync_route53(route53_handler, redis_handler, hosted_zones):
                 item_details['alias'] = False
             redis_handler.save_dns_record(zone_name, item_details)
 
+def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
+    ## TODO: expire
+    if (regions is None) or (regions == 'all'):
+        region_list = aws.ec2.get_region_list()
+    else:
+        region_list = [r.strip() for r in regions.split(',')]
+    thread_list = []
+    for region in region_list:
+        ec2_handler = aws.ec2.Ec2Handler(apikey, apisecret, region)
+        thread = gevent.spawn(fetch_and_save_instance_details, ec2_handler)
+        thread_list.append(thread)
+    gevent.joinall(thread_list)
+
+
+def fetch_and_save_instance_details(ec2_handler):
+    try:
+        instance_list = ec2_handler.get_all_running_instances()
+    except Exception as e:
+        print "Exception occured while fetching instance details for region:" \
+              " %s" % ec2_handler.region
+        print str(e)
+    redis_handler.save_aws_instance_details(instance_list)
+
 
 if __name__ == '__main__':
     option_args = util.parse_options(options=OPTIONS, flag_options=FLAG_OPTIONS,
@@ -137,8 +166,13 @@ if __name__ == '__main__':
     route53_handler = aws.route53.Route53Handler(apikey=arguments['apikey'],
         apisecret=arguments['apisecret'])
     redis_handler = database.redis_handler.RedisHandler(
-        host=arguments['redis_host'], port=arguments['redis_port_no'],
-        expire=arguments['expire_duration'])
-    if not arguments['no_route53']:
-        sync_route53(route53_handler, redis_handler, arguments['hosted_zones'])
+        host=arguments['redis_host'], port=arguments['redis_port_no'])
 
+    if not arguments['no_route53']:
+        sync_route53(route53_handler, redis_handler, arguments['hosted_zones'],
+                     expire=arguments['expire_duration'], ttl=arguments['ttl'])
+    if not arguments['no_ec2']:
+        sync_ec2(redis_handler, apikey=arguments["apikey"],
+                 apisecret=arguments["apisecret"],
+                 regions=arguments['regions'],
+                 expire=arguments['expire_duration'])
