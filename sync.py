@@ -99,7 +99,11 @@ def validate_arguments(option_args):
               " should be a valid Integer" % arguments["redis_port_no"]
         sys.exit(1)
     if (option_args.expire_duration is not None) and option_args.ttl:
-        print "Only one of the options between --expire_duration and --ttl," \
+        print "Only one of the option between --expire_duration and --ttl," \
+              " can be used. Please use -h/--help for details."
+        sys.exit(1)
+    if arguments["no_ec2"] and arguments["no_route53"]:
+        print "Only one of the option between --no_ec2 and --no_route53," \
               " can be used. Please use -h/--help for details."
         sys.exit(1)
     return arguments
@@ -135,4 +139,6 @@ if __name__ == '__main__':
     redis_handler = database.redis_handler.RedisHandler(
         host=arguments['redis_host'], port=arguments['redis_port_no'],
         expire=arguments['expire_duration'])
-    sync_route53(route53_handler, redis_handler, arguments['hosted_zones'])
+    if not arguments['no_route53']:
+        sync_route53(route53_handler, redis_handler, arguments['hosted_zones'])
+
