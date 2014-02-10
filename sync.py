@@ -86,8 +86,22 @@ def validate_arguments(option_args):
         print "Mandatory arguments missing: --%s\nUse: -h/--help for details" \
               % ', --'.join(mandatory_missing)
         sys.exit(1)
-    arguments["expire_duration"] = int(arguments["expire_duration"])
-    arguments["redis_port_no"] = int(arguments["redis_port_no"])
+    try:
+        arguments["expire_duration"] = int(arguments["expire_duration"])
+    except ValueError as e:
+        print "Invalid value passed for option --expire_duration (%s). It" \
+              " should be a valid Integer" % arguments["expire_duration"]
+        sys.exit(1)
+    try:
+        arguments["redis_port_no"] = int(arguments["redis_port_no"])
+    except ValueError as e:
+        print "Invalid value passed for option --redis_port_no (%s). It" \
+              " should be a valid Integer" % arguments["redis_port_no"]
+        sys.exit(1)
+    if (option_args.expire_duration is not None) and option_args.ttl:
+        print "Only one of the options between --expire_duration and --ttl," \
+              " can be used. Please use -h/--help for details."
+        sys.exit(1)
     return arguments
 
 
