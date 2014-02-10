@@ -13,6 +13,7 @@ import optparse
 import util
 import sys
 import os
+import time
 import aws.ec2
 import aws.route53
 import database.redis_handler
@@ -122,17 +123,16 @@ def sync_route53(route53_handler, redis_handler, hosted_zones, expire, ttl):
         record_sets = route53_handler.fetch_all_route53dns_rsets(zone_id)
         for record in record_sets:
             item_details = {}
+            item_details['name'] = record.name
             item_details['ttl'] = record.ttl
             item_details['type'] = record.type
-            item_details['name'] = record.name
             item_details['value'] = record.to_print()
-            item_details['zone_name'] = zone_name
-            if record.type == 'A' and record.alias_dns_name is not None:
-                item_details['alias'] = True
+            item_details['timestamp'] = int(time.time())
+            if record.alias_dns_name is not None:
+                item_details['type'] = '%s (Alias)' % record.type
                 item_details['value'] = record.alias_dns_name
-            else:
-                item_details['alias'] = False
-            redis_handler.save_dns_record(zone_name, item_details)
+            redis_handler.save_route53_details(item_details)
+
 
 def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
     ## TODO: expire
@@ -143,19 +143,23 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
     thread_list = []
     for region in region_list:
         ec2_handler = aws.ec2.Ec2Handler(apikey, apisecret, region)
-        thread = gevent.spawn(fetch_and_save_instance_details, ec2_handler)
+        thread = gevent.spawn(fetch_and_save_ec2_details, ec2_handler)
         thread_list.append(thread)
-    gevent.joinall(thread_list)
+    return thread_list
 
 
-def fetch_and_save_instance_details(ec2_handler):
+def fetch_and_save_ec2_details(ec2_handler):
+    instance_list = []
     try:
-        instance_list = ec2_handler.get_all_running_instances()
+        instance_list = ec2_handler.get_all_instances()
     except Exception as e:
-        print "Exception occured while fetching instance details for region:" \
-              " %s" % ec2_handler.region
-        print str(e)
-    redis_handler.save_aws_instance_details(instance_list)
+        print "AWS Region: %s, Exception message: %s" % (ec2_handler.region, e.message)
+    for instance in instance_list:
+        instance_details = ec2_handler.get_instance_details(instance)
+        if instance_details['state'] == 'running':
+            redis_handler.save_ec2_details(instance_details)
+        else:
+            redis_handler.delete_ec2_details(instance_details['region'], instance_details['instance_id'])
 
 
 if __name__ == '__main__':
@@ -168,11 +172,34 @@ if __name__ == '__main__':
     redis_handler = database.redis_handler.RedisHandler(
         host=arguments['redis_host'], port=arguments['redis_port_no'])
 
+    thread_list = []
     if not arguments['no_route53']:
-        sync_route53(route53_handler, redis_handler, arguments['hosted_zones'],
-                     expire=arguments['expire_duration'], ttl=arguments['ttl'])
+        thread = gevent.spawn(sync_route53, route53_handler, redis_handler,
+            arguments['hosted_zones'], expire=arguments['expire_duration'],
+            ttl=arguments['ttl'])
+        thread_list.append(thread)
     if not arguments['no_ec2']:
-        sync_ec2(redis_handler, apikey=arguments["apikey"],
+        new_threads = sync_ec2(redis_handler, apikey=arguments["apikey"],
                  apisecret=arguments["apisecret"],
                  regions=arguments['regions'],
                  expire=arguments['expire_duration'])
+        thread_list.extend(new_threads)
+    gevent.joinall(thread_list)
+
+
+## Use prettytable for display
+## https://code.google.com/p/prettytable/wiki/Tutorial
+##
+## Route53 Entries:
+## Name, ttl, Type, Value
+##
+## AWS EC2 details:
+## EC2 dns:
+## Region:
+## Zone:
+## Public IP:
+## Private IP:
+## Instance Type:
+## --------------
+## Index entries
+## --------------
