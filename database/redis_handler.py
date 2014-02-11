@@ -40,6 +40,9 @@ class RedisHandler(object):
         hash_key = "%s:%s" % (self.index_prefix, key)
         return self.connection.get(hash_key)
 
+    def get_index_hash_key(self, key):
+        return "%s:%s" % (self.index_prefix, key)
+
     def delete_index(self, key):
         hash_key = "%s:%s" % (self.index_prefix, key)
         return self.connection.delete(hash_key)

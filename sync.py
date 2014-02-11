@@ -118,27 +118,44 @@ def validate_arguments(option_args):
         sys.exit(1)
     return arguments
 
-
 def sync_route53(route53_handler, redis_handler, hosted_zones, expire, ttl):
-    ## TODO: expire, ttl
     global index_keys
-    route53_zone_details = route53_handler.fetch_route53_zone_details(
-        hosted_zones)
+    try:
+        route53_zone_details = route53_handler.fetch_route53_zone_details(
+            hosted_zones)
+    except Exception as e:
+        print "Exception while fetching route53 hosted zones, message: %s" \
+              % e.message
+        return
+    thread_list = []
     for zone_name, zone_id in route53_zone_details.items():
-        record_sets = route53_handler.fetch_all_route53dns_rsets(zone_id)
-        for record in record_sets:
-            item_details = {}
-            item_details['name'] = record.name
-            item_details['ttl'] = record.ttl
-            item_details['type'] = record.type
-            item_details['value'] = record.to_print()
-            item_details['timestamp'] = int(time.time())
-            if record.alias_dns_name is not None:
-                item_details['type'] = '%s (Alias)' % record.type
-                item_details['value'] = record.alias_dns_name
-            hash_key, status = redis_handler.save_route53_details(item_details)
-            index_keys.append(hash_key)
+        thread = gevent.spawn(sync_route53_zone, route53_handler,
+            redis_handler, zone_name, zone_id, expire, ttl)
+        thread_list.append(thread)
+    return thread_list
 
+def sync_route53_zone(route53_handler, redis_handler, zone_name, zone_id,
+                      expire, ttl):
+    ## TODO: expire, ttl
+    try:
+        record_sets = route53_handler.fetch_all_route53dns_rsets(zone_id)
+    except Exception as e:
+        print "Exception for Route53 Zone: %s, message: %s" % (zone_name,
+                                                               e.message)
+        return
+    for record in record_sets:
+        item_details = {}
+        item_details['name'] = record.name
+        item_details['ttl'] = record.ttl
+        item_details['type'] = record.type
+        item_details['value'] = record.to_print()
+        item_details['timestamp'] = int(time.time())
+        if record.alias_dns_name is not None:
+            item_details['type'] = '%s (Alias)' % record.type
+            item_details['value'] = record.alias_dns_name
+        hash_key, status = redis_handler.save_route53_details(item_details)
+        index_keys.append(hash_key)
+    print "Sync complete for Route53 zone: %s" % zone_name
 
 def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
     ## TODO: expire
@@ -153,24 +170,24 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
         thread_list.append(thread)
     return thread_list
 
-
 def fetch_and_save_ec2_details(ec2_handler):
     global index_keys
-    instance_list = []
     try:
         instance_list = ec2_handler.get_all_instances()
     except Exception as e:
-        print "AWS Region: %s, Exception message: %s" % (ec2_handler.region,
-                                                         e.message)
+        print "Exception for AWS Region: %s, message: %s" \
+              % (ec2_handler.region, e.message)
+        return
     for instance in instance_list:
         instance_details = ec2_handler.get_instance_details(instance)
         if instance_details['state'] == 'running':
+            instance_details['timestamp'] = int(time.time())
             hash_key, status = redis_handler.save_ec2_details(instance_details)
             index_keys.append(hash_key)
         else:
             redis_handler.delete_ec2_details(instance_details['region'],
                                              instance_details['instance_id'])
-
+    print "Sync complete for ec2 region: %s" % ec2_handler.region
 
 def index_records(redis_handler):
     for hash_key in index_keys:
@@ -178,20 +195,27 @@ def index_records(redis_handler):
         for key, value in details.items():
             if key not in INDEX:
                 continue
-            index_value = redis_handler.get_index(value)
-            if index_value:
-                index_value = "%s,%s" % (index_value, hash_key)
-            else:
-                index_value = hash_key
-            ## Remove redundant values
-            indexed_keys = set(index_value.split(','))
-            for k in indexed_keys.copy():
-                if not redis_handler.exists(k):
-                    indexed_keys.remove(k)
-            if len(indexed_keys) > 0:
-                redis_handler.save_index(value, ','.join(indexed_keys))
-            else:
-                redis_handler.delete_index(value)
+            ## SRV records may contain ','. We need to separate values for
+            ## effective indexing
+            for v in value.split(','):
+                v = value.split(' ')[-1]
+                save_index(redis_handler, hash_key, v)
+
+def save_index(redis_handler, hash_key, value):
+    index_value = redis_handler.get_index(value)
+    if index_value:
+        index_value = "%s,%s" % (index_value, hash_key)
+    else:
+        index_value = hash_key
+    ## Remove redundant values
+    indexed_keys = set(index_value.split(','))
+    for k in indexed_keys.copy():
+        if not redis_handler.exists(k):
+            indexed_keys.remove(k)
+    if len(indexed_keys) > 0:
+        redis_handler.save_index(value, ','.join(indexed_keys))
+    else:
+        redis_handler.delete_index(value)
 
 
 if __name__ == '__main__':
@@ -206,21 +230,21 @@ if __name__ == '__main__':
 
     thread_list = []
     if not arguments['no_route53']:
-        thread = gevent.spawn(sync_route53, route53_handler, redis_handler,
+        new_threads = sync_route53(route53_handler, redis_handler,
             arguments['hosted_zones'], expire=arguments['expire_duration'],
             ttl=arguments['ttl'])
-        thread_list.append(thread)
+        thread_list.extend(new_threads)
     if not arguments['no_ec2']:
         new_threads = sync_ec2(redis_handler, apikey=arguments["apikey"],
                  apisecret=arguments["apisecret"],
                  regions=arguments['regions'],
                  expire=arguments['expire_duration'])
         thread_list.extend(new_threads)
-    print 'Waiting for threads...'
-    gevent.joinall(thread_list, timeout=30)
-    print 'Indexing records'
+    print 'Sync Started... . . .  .  .   .     .     .'
+    gevent.joinall(thread_list)
+    print 'Details saved. Indexing records!'
     index_records(redis_handler)
-    print 'Done'
+    print 'Complete'
 
 ## Use prettytable for display
 ## https://code.google.com/p/prettytable/wiki/Tutorial
