@@ -4,9 +4,10 @@
 #
 # Author - @rohit01
 
-import optparse
-import util
 import os
+import sys
+import util
+import database.redis_handler
 
 VERSION = """Version: 0.1,
 Author: Rohit Gupta - @rohit01"""
@@ -46,7 +47,12 @@ def validate_arguments(option_args):
         sys.exit(1)
     return arguments
 
+if __name__ == '__main__':
+    option_args = util.parse_options(options=OPTIONS, description=DESCRIPTION,
+        usage=USAGE, version=VERSION)
+    arguments = validate_arguments(option_args)
+    redis_handler = database.redis_handler.RedisHandler(
+        host=arguments['redis_host'], port=arguments['redis_port_no'])
+    ## Get Index
+    print redis_handler.get_index(arguments['input_lookup'])
 
-option_args = util.parse_options(options=OPTIONS, description=DESCRIPTION,
-                                 usage=USAGE, version=VERSION)
-print option_args

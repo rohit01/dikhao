@@ -9,11 +9,10 @@ import gevent
 import gevent.monkey
 gevent.monkey.patch_all()
 
-import optparse
-import util
-import sys
 import os
+import sys
 import time
+import util
 import aws.ec2
 import aws.route53
 import database.redis_handler
