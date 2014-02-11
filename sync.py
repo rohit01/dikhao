@@ -57,6 +57,11 @@ DEFAULTS = {
     "ttl": False,
 }
 
+## Global variable for indexing
+index_keys = []
+INDEX = ['name', 'value', 'instance_id', 'private_ip_address', 'ip_address',
+         'ec2_dns', 'ec2_private_dns', ]
+
 
 def validate_arguments(option_args):
     apikey = option_args.apikey or DEFAULTS.get('apikey', None)
@@ -117,6 +122,7 @@ def validate_arguments(option_args):
 
 def sync_route53(route53_handler, redis_handler, hosted_zones, expire, ttl):
     ## TODO: expire, ttl
+    global index_keys
     route53_zone_details = route53_handler.fetch_route53_zone_details(
         hosted_zones)
     for zone_name, zone_id in route53_zone_details.items():
@@ -131,7 +137,8 @@ def sync_route53(route53_handler, redis_handler, hosted_zones, expire, ttl):
             if record.alias_dns_name is not None:
                 item_details['type'] = '%s (Alias)' % record.type
                 item_details['value'] = record.alias_dns_name
-            redis_handler.save_route53_details(item_details)
+            hash_key, status = redis_handler.save_route53_details(item_details)
+            index_keys.append(hash_key)
 
 
 def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
@@ -149,23 +156,49 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
 
 
 def fetch_and_save_ec2_details(ec2_handler):
+    global index_keys
     instance_list = []
     try:
         instance_list = ec2_handler.get_all_instances()
     except Exception as e:
-        print "AWS Region: %s, Exception message: %s" % (ec2_handler.region, e.message)
+        print "AWS Region: %s, Exception message: %s" % (ec2_handler.region,
+                                                         e.message)
     for instance in instance_list:
         instance_details = ec2_handler.get_instance_details(instance)
         if instance_details['state'] == 'running':
-            redis_handler.save_ec2_details(instance_details)
+            hash_key, status = redis_handler.save_ec2_details(instance_details)
+            index_keys.append(hash_key)
         else:
-            redis_handler.delete_ec2_details(instance_details['region'], instance_details['instance_id'])
+            redis_handler.delete_ec2_details(instance_details['region'],
+                                             instance_details['instance_id'])
+
+
+def index_records(redis_handler):
+    for hash_key in index_keys:
+        details = redis_handler.get_details(hash_key)
+        for key, value in details.items():
+            if key not in INDEX:
+                continue
+            index_value = redis_handler.get_index(value)
+            if index_value:
+                index_value = "%s,%s" % (index_value, hash_key)
+            else:
+                index_value = hash_key
+            ## Remove redundant values
+            indexed_keys = set(index_value.split(','))
+            for k in indexed_keys.copy():
+                if not redis_handler.exists(k):
+                    indexed_keys.remove(k)
+            if len(indexed_keys) > 0:
+                redis_handler.save_index(value, ','.join(indexed_keys))
+            else:
+                redis_handler.delete_index(value)
 
 
 if __name__ == '__main__':
-    option_args = util.parse_options(options=OPTIONS, flag_options=FLAG_OPTIONS,
-                                   description=DESCRIPTION, usage=USAGE,
-                                   version=VERSION)
+    option_args = util.parse_options(options=OPTIONS,
+        flag_options=FLAG_OPTIONS, description=DESCRIPTION, usage=USAGE,
+        version=VERSION)
     arguments = validate_arguments(option_args)
     route53_handler = aws.route53.Route53Handler(apikey=arguments['apikey'],
         apisecret=arguments['apisecret'])
@@ -184,8 +217,11 @@ if __name__ == '__main__':
                  regions=arguments['regions'],
                  expire=arguments['expire_duration'])
         thread_list.extend(new_threads)
-    gevent.joinall(thread_list)
-
+    print 'Waiting for threads...'
+    gevent.joinall(thread_list, timeout=30)
+    print 'Indexing records'
+    index_records(redis_handler)
+    print 'Done'
 
 ## Use prettytable for display
 ## https://code.google.com/p/prettytable/wiki/Tutorial
