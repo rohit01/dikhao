@@ -198,7 +198,7 @@ def index_records(redis_handler):
             ## SRV records may contain ','. We need to separate values for
             ## effective indexing
             for v in value.split(','):
-                v = value.split(' ')[-1]
+                v = v.split(' ')[-1]
                 save_index(redis_handler, hash_key, v)
 
 def save_index(redis_handler, hash_key, value):
