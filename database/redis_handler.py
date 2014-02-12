@@ -23,11 +23,6 @@ class RedisHandler(object):
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
 
-    def delete_ec2_details(self, region, instance_id):
-        hash_key = "%s:%s:%s" % (self.ec2_hash_prefix, region, instance_id)
-        status = self.connection.delete(hash_key) == 1  ## Returns 1 if deleted
-        return (hash_key, status)
-
     def get_details(self, hash_key):
         return self.connection.hgetall(hash_key)
 
@@ -35,6 +30,10 @@ class RedisHandler(object):
         hash_key = "%s:%s" % (self.index_prefix, key)
         status = self.connection.set(hash_key, value)
         return (hash_key, status)
+
+    def expire_index(self, key, duration):
+        hash_key = "%s:%s" % (self.index_prefix, key)
+        return self.connection.expire(hash_key, duration)
 
     def get_index(self, key):
         hash_key = "%s:%s" % (self.index_prefix, key)
@@ -49,3 +48,6 @@ class RedisHandler(object):
 
     def exists(self, hash_key):
         return self.connection.exists(hash_key)
+
+    def expire(self, hash_key, duration):
+        return self.connection.expire(hash_key, duration)

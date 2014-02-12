@@ -40,7 +40,9 @@ FLAG_OPTIONS = {
          "ec2 dns mapping with Route53 will be disabled",
     'R': "no_route53;Dont sync route53 details in redis. If route53 sync is"
          " disabled, only ec2 dns details will be available",
-    't': "ttl;Use DNS ttl value as expiry of local DNS entries in Redis",
+    't': "ttl;Use DNS ttl value as expire for Route53 cache in Redis. WARNING"
+         " - Use with caution: If ttl values are very low, it may lead to a"
+         " highly volatile cache",
 }
 USAGE = "%s -a <aws api key> -s <aws secret key> [-r <aws regions>]" \
         " [-e <no of seconds>] [-H <redis host address>] [-p <port no>] [-E]" \
@@ -136,7 +138,6 @@ def sync_route53(route53_handler, redis_handler, hosted_zones, expire, ttl):
 
 def sync_route53_zone(route53_handler, redis_handler, zone_name, zone_id,
                       expire, ttl):
-    ## TODO: expire, ttl
     try:
         record_sets = route53_handler.fetch_all_route53dns_rsets(zone_id)
     except Exception as e:
@@ -155,10 +156,16 @@ def sync_route53_zone(route53_handler, redis_handler, zone_name, zone_id,
             item_details['value'] = record.alias_dns_name
         hash_key, status = redis_handler.save_route53_details(item_details)
         index_keys.append(hash_key)
+        if ttl:
+            try:
+                redis_handler.expire(hash_key, int(item_details['ttl']))
+            except ValueError:
+                redis_handler.expire(hash_key, expire)
+        elif expire > 0:
+            redis_handler.expire(hash_key, expire)
     print "Sync complete for Route53 zone: %s" % zone_name
 
 def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
-    ## TODO: expire
     if (regions is None) or (regions == 'all'):
         region_list = aws.ec2.get_region_list()
     else:
@@ -166,11 +173,11 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
     thread_list = []
     for region in region_list:
         ec2_handler = aws.ec2.Ec2Handler(apikey, apisecret, region)
-        thread = gevent.spawn(fetch_and_save_ec2_details, ec2_handler)
+        thread = gevent.spawn(fetch_and_save_ec2_details, ec2_handler, expire)
         thread_list.append(thread)
     return thread_list
 
-def fetch_and_save_ec2_details(ec2_handler):
+def fetch_and_save_ec2_details(ec2_handler, expire):
     global index_keys
     try:
         instance_list = ec2_handler.get_all_instances()
@@ -180,16 +187,14 @@ def fetch_and_save_ec2_details(ec2_handler):
         return
     for instance in instance_list:
         instance_details = ec2_handler.get_instance_details(instance)
-        if instance_details['state'] == 'running':
-            instance_details['timestamp'] = int(time.time())
-            hash_key, status = redis_handler.save_ec2_details(instance_details)
-            index_keys.append(hash_key)
-        else:
-            redis_handler.delete_ec2_details(instance_details['region'],
-                                             instance_details['instance_id'])
+        instance_details['timestamp'] = int(time.time())
+        hash_key, status = redis_handler.save_ec2_details(instance_details)
+        index_keys.append(hash_key)
+        if expire > 0:
+            redis_handler.expire(hash_key, expire)
     print "Sync complete for ec2 region: %s" % ec2_handler.region
 
-def index_records(redis_handler):
+def index_records(redis_handler, expire):
     for hash_key in index_keys:
         details = redis_handler.get_details(hash_key)
         for key, value in details.items():
@@ -200,6 +205,7 @@ def index_records(redis_handler):
             for v in value.split(','):
                 v = v.split(' ')[-1]
                 save_index(redis_handler, hash_key, v)
+                redis_handler.expire_index(v, expire)
 
 def save_index(redis_handler, hash_key, value):
     index_value = redis_handler.get_index(value)
@@ -209,9 +215,11 @@ def save_index(redis_handler, hash_key, value):
         index_value = hash_key
     ## Remove redundant values
     indexed_keys = set(index_value.split(','))
+    ## Clean stale entries
     for k in indexed_keys.copy():
         if not redis_handler.exists(k):
             indexed_keys.remove(k)
+    ## Save Index
     if len(indexed_keys) > 0:
         redis_handler.save_index(value, ','.join(indexed_keys))
     else:
@@ -243,22 +251,5 @@ if __name__ == '__main__':
     print 'Sync Started... . . .  .  .   .     .     .'
     gevent.joinall(thread_list)
     print 'Details saved. Indexing records!'
-    index_records(redis_handler)
+    index_records(redis_handler, expire=arguments['expire_duration'])
     print 'Complete'
-
-## Use prettytable for display
-## https://code.google.com/p/prettytable/wiki/Tutorial
-##
-## Route53 Entries:
-## Name, ttl, Type, Value
-##
-## AWS EC2 details:
-## EC2 dns:
-## Region:
-## Zone:
-## Public IP:
-## Private IP:
-## Instance Type:
-## --------------
-## Index entries
-## --------------
