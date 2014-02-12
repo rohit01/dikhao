@@ -61,15 +61,28 @@ def validate_arguments(option_args):
         sys.exit(1)
     return arguments
 
+def generate_fqdn_and_pqdn(host):
+    if host.endswith('.'):
+        return (host, host[:-1])
+    return ("%s." % host, host)
 
 def lookup(redis_handler, host):
+    fqdn, pqdn = generate_fqdn_and_pqdn(host)
     ## Get Index
-    index_value = redis_handler.get_index(host)
+    fqdn_index = redis_handler.get_index(fqdn) or ''
+    pqdn_index = redis_handler.get_index(pqdn) or ''
+    ## Merge indexes
+    index_value = ','.join([i for i in (fqdn_index, pqdn_index) if i])
+    ## Remove duplicates
+    index_value = ','.join(set(index_value.split(',')))
     if not index_value:
         return None
+
     ## Initial search
     match_found = {}
     for hash_key in index_value.split(','):
+        if not hash_key.strip():
+            continue
         details = redis_handler.get_details(hash_key)
         match_found[hash_key] = [details, False]  ## False to indicate
                                                   ## further search can be done
