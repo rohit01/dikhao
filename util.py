@@ -25,3 +25,8 @@ def parse_options(options, flag_options=None, description=None, usage=None,
                               action="store_true", help=help)
     (options, args) = parser.parse_args()
     return options
+
+def generate_fqdn_and_pqdn(host):
+    if host.endswith('.'):
+        return (host, host[:-1])
+    return ("%s." % host, host)

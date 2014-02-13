@@ -61,7 +61,7 @@ DEFAULTS = {
 ## Global variable for indexing
 index_keys = []
 INDEX = ['name', 'value', 'instance_id', 'private_ip_address', 'ip_address',
-         'ec2_dns', 'ec2_private_dns', ]
+         'ec2_dns', 'ec2_private_dns', 'elb_name', 'elb_dns', 'elb_instances']
 
 
 def validate_arguments(option_args):
@@ -173,39 +173,75 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
     thread_list = []
     for region in region_list:
         ec2_handler = aws.ec2.Ec2Handler(apikey, apisecret, region)
-        thread = gevent.spawn(fetch_and_save_ec2_details, ec2_handler, expire)
+        thread = gevent.spawn(sync_ec2_instances, ec2_handler, expire)
+        thread_list.append(thread)
+        thread = gevent.spawn(sync_ec2_elbs, ec2_handler, expire)
         thread_list.append(thread)
     return thread_list
 
-def fetch_and_save_ec2_details(ec2_handler, expire):
+def sync_ec2_instances(ec2_handler, expire):
     global index_keys
     try:
-        instance_list = ec2_handler.get_all_instances()
+        instance_list = ec2_handler.fetch_all_instances()
     except Exception as e:
-        print "Exception for AWS Region: %s, message: %s" \
+        print "Exception for EC2 in Region: %s, message: %s" \
               % (ec2_handler.region, e.message)
         return
     for instance in instance_list:
         instance_details = ec2_handler.get_instance_details(instance)
         instance_details['timestamp'] = int(time.time())
-        hash_key, status = redis_handler.save_ec2_details(instance_details)
+        hash_key, status = redis_handler.save_instance_details(instance_details)
         index_keys.append(hash_key)
         if expire > 0:
             redis_handler.expire(hash_key, expire)
-    print "Sync complete for ec2 region: %s" % ec2_handler.region
+    print "Instance sync complete for ec2 region: %s" % ec2_handler.region
+
+def sync_ec2_elbs(ec2_handler, expire):
+    global index_keys
+    try:
+        elb_list = ec2_handler.fetch_all_elbs()
+    except Exception as e:
+        print "Exception for ELB in Region: %s, message: %s" \
+              % (ec2_handler.region, e.message)
+        return
+    for elb in elb_list:
+        elb_details = ec2_handler.get_elb_details(elb)
+        elb_details['timestamp'] = int(time.time())
+        hash_key, status = redis_handler.save_elb_details(elb_details)
+        index_keys.append(hash_key)
+        if expire > 0:
+            redis_handler.expire(hash_key, expire)
+    print "ELB sync complete for ec2 region: %s" % ec2_handler.region
 
 def index_records(redis_handler, expire):
+    global index_keys
     for hash_key in index_keys:
         details = redis_handler.get_details(hash_key)
         for key, value in details.items():
             if key not in INDEX:
                 continue
-            ## SRV records may contain ','. We need to separate values for
-            ## effective indexing
-            for v in value.split(','):
-                v = v.split(' ')[-1]
-                save_index(redis_handler, hash_key, v)
-                redis_handler.expire_index(v, expire)
+            if key == 'elb_instances':
+                for v in value.split(','):
+                    instance_id = v.split(' ')[0]
+                    elb = redis_handler.get_instance_item_value(
+                        region=details['region'], instance_id=instance_id,
+                        key='elb'
+                    ) or ''
+                    elb_list = elb.split(',')
+                    elb_list.append(details['elb_name'])
+                    ## Remove blank and duplicate values
+                    elb = ','.join([i for i in set(elb_list) if i])
+                    hash_key, status = redis_handler.add_instance_details(
+                        region=details['region'], instance_id=instance_id,
+                        key='elb', value=elb
+                    )
+            else:
+                ## SRV records may contain ','. We need to separate values for
+                ## effective indexing
+                for v in value.split(','):
+                    v = v.split(' ')[-1]
+                    save_index(redis_handler, hash_key, v)
+                    redis_handler.expire_index(v, expire)
 
 def save_index(redis_handler, hash_key, value):
     index_value = redis_handler.get_index(value)

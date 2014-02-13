@@ -1,4 +1,5 @@
 import boto.ec2
+import boto.ec2.elb
 
 def get_region_list():
     regions = boto.ec2.get_regions('ec2')
@@ -13,14 +14,37 @@ class Ec2Handler(object):
             aws_access_key_id=apikey,
             aws_secret_access_key=apisecret
         )
+        self.elb_connection = boto.ec2.elb.connect_to_region(
+            region_name=self.region,
+            aws_access_key_id=apikey,
+            aws_secret_access_key=apisecret
+        )
 
-    def get_all_instances(self):
+    def fetch_all_instances(self):
         reservations = self.connection.get_all_instances()
         instance_list = []
         for r in reservations:
             for i in r.instances:
                 instance_list.append(i)
         return instance_list
+
+    def fetch_all_elbs(self):
+        return self.elb_connection.get_all_load_balancers()
+
+    def get_elb_details(self, elb):
+        ## Get instances with health info
+        instance_details = {}
+        instance_health = elb.get_instance_health()
+        for instance in instance_health:
+            instance_details[instance.instance_id] = instance.state
+        ## Map details
+        details = {}
+        details['elb_name'] = elb.name
+        details['region'] = elb.connection.region.name
+        details['elb_dns'] = elb.dns_name
+        details['elb_instances'] = ','.join(['%s %s' % (k, v)
+                                         for k, v in instance_details.items()])
+        return details
 
     def get_instance_details(self, instance):
         details = {}
@@ -38,6 +62,5 @@ class Ec2Handler(object):
 
 # Also Get these details:
 # -----------------------
-# elb
 # elastic_ip
 # -----------------------

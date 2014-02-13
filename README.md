@@ -5,19 +5,19 @@ Dikhao is a project to map every EC2 resource will all related components and pr
 #### Current features:
 1. Sync all Route53 records in redis
 2. Sync all EC2 instance records in redis
-3. Index all synced records
-4. Provides variety of syncing options like cache expire based on ttl/duration.
-5. Easy and fast lookups based on: ip address, private ip, instance id, route 53 DNS, ec2 dns, etc. And this list is configurable.
+3. Sync all ELB records in redis
+4. Index all synced records
+5. Provides variety of syncing options like cache expire based on ttl/duration.
+6. Easy and fast lookups based on: ip address, private ip, instance id, route 53 DNS, ec2 dns, etc. And this list is configurable.
 
 #### Planned features:
-1. Sync and lookup for ELB details
-2. Sync and lookup for elastic ip
-3. Sync and lookup for VPC
-4. Heroku deployment support
-5. hubot integration
-6. setup.py installation file
-7. Grabbing a space in pip repository
-8. Great documentation
-9. *Release and plan new features!*
+1. Sync and lookup for elastic ip
+2. Sync and lookup for VPC
+3. Heroku deployment support
+4. hubot integration
+5. setup.py installation file
+6. Grabbing a space in pip repository
+7. Great documentation
+8. *Release and plan new features!*
 
 ** Instructions will be added soon **

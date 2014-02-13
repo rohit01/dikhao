@@ -8,8 +8,9 @@ class RedisHandler(object):
             port = 6379
         self.connection = redis.StrictRedis(host, port)
         self.route53_hash_prefix = 'aws:route53'         ## Suffix: Type, name
-        self.ec2_hash_prefix = 'aws:ec2'        ## Suffix: region, instance id
-        self.index_prefix = 'aws:index'         ## Suffix: index_item
+        self.instance_hash_prefix = 'aws:ec2:instance'   ## Suffix: region, instance id
+        self.elb_hash_prefix = 'aws:ec2:elb'             ## Suffix: region, elb name
+        self.index_prefix = 'aws:index'                  ## Suffix: index_item
 
     def save_route53_details(self, item_details):
         hash_key = "%s:%s:%s" % (self.route53_hash_prefix,
@@ -17,9 +18,28 @@ class RedisHandler(object):
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
 
-    def save_ec2_details(self, item_details):
-        hash_key = "%s:%s:%s" % (self.ec2_hash_prefix, item_details['region'],
+    def save_instance_details(self, item_details):
+        hash_key = "%s:%s:%s" % (self.instance_hash_prefix,
+                                 item_details['region'],
                                  item_details['instance_id'])
+        status = self.connection.hmset(hash_key, item_details)
+        return (hash_key, status)
+
+    def add_instance_details(self, region, instance_id, key, value):
+        hash_key = "%s:%s:%s" % (self.instance_hash_prefix, region,
+                                 instance_id)
+        status = self.connection.hset(hash_key, key, value)
+        return (hash_key, status)
+
+    def get_instance_item_value(self, region, instance_id, key):
+        hash_key = "%s:%s:%s" % (self.instance_hash_prefix, region,
+                                 instance_id)
+        return self.connection.hget(hash_key, key)
+
+    def save_elb_details(self, item_details):
+        hash_key = "%s:%s:%s" % (self.elb_hash_prefix,
+                                 item_details['region'],
+                                 item_details['elb_name'])
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
 

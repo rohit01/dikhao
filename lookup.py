@@ -72,13 +72,8 @@ def validate_arguments(option_args):
         sys.exit(1)
     return arguments
 
-def generate_fqdn_and_pqdn(host):
-    if host.endswith('.'):
-        return (host, host[:-1])
-    return ("%s." % host, host)
-
-def lookup(redis_handler, host):
-    fqdn, pqdn = generate_fqdn_and_pqdn(host)
+def get_index(host):
+    fqdn, pqdn = util.generate_fqdn_and_pqdn(host)
     ## Get Index
     fqdn_index = redis_handler.get_index(fqdn) or ''
     pqdn_index = redis_handler.get_index(pqdn) or ''
@@ -86,6 +81,10 @@ def lookup(redis_handler, host):
     index_value = ','.join([i for i in (fqdn_index, pqdn_index) if i])
     ## Remove duplicates
     index_value = ','.join(set(index_value.split(',')))
+    return index_value
+
+def lookup(redis_handler, host):
+    index_value = get_index(host)
     if not index_value:
         return None
     ## Initial search
@@ -108,12 +107,30 @@ def lookup(redis_handler, host):
         match_found[hash_key][1] = True
         ## Check for clues in initial search results
         details = match_found[hash_key][0]
+        ## Handle special case for displaying ELB info while searching with
+        ## instance details
+        if hash_key.startswith(redis_handler.instance_hash_prefix) and \
+                'elb' in details:
+            for elb in details['elb'].split(','):
+                if not elb.strip():
+                    continue
+                index_value = redis_handler.get_index(elb)
+                if index_value is None:
+                    continue
+                for new_hash_key in index_value.split(','):
+                    if new_hash_key in match_found:
+                        continue
+                    new_details = redis_handler.get_details(new_hash_key)
+                    if not new_details:
+                        continue
+                    match_found[new_hash_key] = [new_details, False]
+        ## Search indexed items
         for key, value in details.items():
             if key not in sync.INDEX:
                 continue
             if redis_handler.get_index_hash_key(value) in match_found:
                 continue
-            index_value = redis_handler.get_index(value)
+            index_value = get_index(value)
             if index_value is None:
                 continue
             for new_hash_key in index_value.split(','):
@@ -122,49 +139,68 @@ def lookup(redis_handler, host):
                 details = redis_handler.get_details(new_hash_key)
                 if not details:
                     continue
-                match_found[new_hash_key] = [details, False]  ## False to
-                                        ## indicate further search can be done
+                match_found[new_hash_key] = [details, False]
+    categorize_match = {
+        'route53': [],
+        'instance': [],
+        'elb': [],
+    }
     for k, v in match_found.items():
-        match_found[k] = v[0]
-    return match_found
+        if k.startswith(redis_handler.route53_hash_prefix):
+            categorize_match['route53'].append(v[0])
+        elif k.startswith(redis_handler.instance_hash_prefix):
+            categorize_match['instance'].append(v[0])
+        elif k.startswith(redis_handler.elb_hash_prefix):
+            categorize_match['elb'].append(v[0])
+    return categorize_match
+
 
 def formatted_output(redis_handler, match_dict):
-    route53_table = prettytable.PrettyTable(["Name", "ttl", "Type", "Value"])
-    route53_table.align = 'l'
-    ec2_table = prettytable.PrettyTable(["Property", "Value"])
-    ec2_table.align["Property"] = 'r'
-    ec2_table.align["Value"] = 'l'
-    last_updated = 0
-    for hash_key, details in match_dict.items():
-        timestamp = int(details.pop('timestamp', 0))
-        if hash_key.startswith(redis_handler.route53_hash_prefix):
+    if match_dict.get('route53', None) and len(match_dict['route53']):
+        print "Route53 Details:"
+        cli_table = prettytable.PrettyTable(["Name", "ttl", "Type", "Value"])
+        cli_table.align = 'l'
+        for details in match_dict['route53']:
             row = [
                 details['name'], details['ttl'], details['type'],
                 '\n'.join(details['value'].split(','))
             ]
-            route53_table.add_row(row)
-            if timestamp > last_updated:
-                last_updated = timestamp
-        elif hash_key.startswith(redis_handler.ec2_hash_prefix):
-            if timestamp > last_updated:
-                last_updated = timestamp
+            cli_table.add_row(row)
+        print cli_table.get_string()
+    if match_dict.get('instance', None) and len(match_dict['instance']):
+        print "EC2 Instance Details:"
+        for details in match_dict['instance']:
+            cli_table = prettytable.PrettyTable(["Property", "Value"])
+            cli_table.align["Property"] = 'r'
+            cli_table.align["Value"] = 'l'
             ## Display items in order
             for k in EC2_ITEM_ORDER:
                 v = details.pop(k, None)
                 if v:
                     k = FORMAT_EC2.get(k, k)
-                    ec2_table.add_row([k, v])
+                    cli_table.add_row([k, v])
             ## Display remaining items
             for k, v in details.items():
                 k = FORMAT_EC2.get(k, k)
-                ec2_table.add_row([k, v])
-    print "Route53 Details:"
-    print route53_table
-    print "EC2 Instance Details:"
-    print ec2_table
-    if last_updated:
-        delay = int(time.time()) - last_updated
-        print "Last updated: %s %s ago" % (delay, 'seconds')
+                cli_table.add_row([k, v])
+            print cli_table.get_string()
+    if match_dict.get('elb', None) and len(match_dict['elb']):
+        print "ELB Details:"
+        cli_table = prettytable.PrettyTable(["Name", "ELB DNS", "Instance ID",
+            "State"])
+        cli_table.align = 'l'
+        for details in match_dict['elb']:
+            instance_id_list = []
+            instance_state_list = []
+            instances = details['elb_instances']
+            for i in instances.split(','):
+                instance_id, state = i.split(' ')
+                instance_id_list.append(instance_id)
+                instance_state_list.append(state)
+            cli_table.add_row([details['elb_name'], details['elb_dns'],
+                '\n'.join(instance_id_list), '\n'.join(instance_state_list),
+            ])
+        print cli_table.get_string()
 
 
 if __name__ == '__main__':
