@@ -61,7 +61,8 @@ DEFAULTS = {
 ## Global variable for indexing
 index_keys = []
 INDEX = ['name', 'value', 'instance_id', 'private_ip_address', 'ip_address',
-         'ec2_dns', 'ec2_private_dns', 'elb_name', 'elb_dns', 'elb_instances']
+         'ec2_dns', 'ec2_private_dns', 'elb_name', 'elb_dns', 'elb_instances',
+         'elastic_ip',]
 
 
 def validate_arguments(option_args):
@@ -177,6 +178,8 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
         thread_list.append(thread)
         thread = gevent.spawn(sync_ec2_elbs, ec2_handler, expire)
         thread_list.append(thread)
+        thread = gevent.spawn(sync_elastic_ips, ec2_handler, expire)
+        thread_list.append(thread)
     return thread_list
 
 def sync_ec2_instances(ec2_handler, expire):
@@ -212,6 +215,23 @@ def sync_ec2_elbs(ec2_handler, expire):
         if expire > 0:
             redis_handler.expire(hash_key, expire)
     print "ELB sync complete for ec2 region: %s" % ec2_handler.region
+
+def sync_elastic_ips(ec2_handler, expire):
+    global index_keys
+    try:
+        elastic_ip_list = ec2_handler.fetch_elastic_ips()
+    except Exception as e:
+        print "Exception for Elastic IPs in Region: %s, message: %s" \
+              % (ec2_handler.region, e.message)
+        return
+    for elastic_ip in elastic_ip_list:
+        details = ec2_handler.get_elastic_ip_detail(elastic_ip)
+        details['timestamp'] = int(time.time())
+        hash_key, status = redis_handler.save_elastic_ip_details(details)
+        index_keys.append(hash_key)
+        if expire > 0:
+            redis_handler.expire(hash_key, expire)
+    print "Elastic ip sync complete for ec2 region: %s" % ec2_handler.region
 
 def index_records(redis_handler, expire):
     global index_keys

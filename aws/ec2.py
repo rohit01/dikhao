@@ -28,6 +28,19 @@ class Ec2Handler(object):
                 instance_list.append(i)
         return instance_list
 
+    def get_instance_details(self, instance):
+        details = {}
+        details['instance_id'] = instance.id
+        details['region'] = instance.region.name
+        details['zone'] = instance.placement
+        details['instance_type'] = instance.instance_type
+        details['private_ip_address'] = instance.private_ip_address
+        details['ip_address'] = instance.ip_address
+        details['ec2_dns'] = instance.dns_name
+        details['ec2_private_dns'] = instance.private_dns_name
+        details['state'] = instance.state
+        return details
+
     def fetch_all_elbs(self):
         return self.elb_connection.get_all_load_balancers()
 
@@ -46,21 +59,11 @@ class Ec2Handler(object):
                                          for k, v in instance_details.items()])
         return details
 
-    def get_instance_details(self, instance):
-        details = {}
-        details['instance_id'] = instance.id
-        details['region'] = instance.region.name
-        details['zone'] = instance.placement
-        details['instance_type'] = instance.instance_type
-        details['private_ip_address'] = instance.private_ip_address
-        details['ip_address'] = instance.ip_address
-        details['ec2_dns'] = instance.dns_name
-        details['ec2_private_dns'] = instance.private_dns_name
-        details['state'] = instance.state
-        return details
+    def fetch_elastic_ips(self):
+        return self.connection.get_all_addresses()
 
-
-# Also Get these details:
-# -----------------------
-# elastic_ip
-# -----------------------
+    def get_elastic_ip_detail(self, elastic_ip):
+        return {
+            'elastic_ip': elastic_ip.public_ip,
+            'instance_id': elastic_ip.instance_id,
+        }

@@ -144,6 +144,7 @@ def lookup(redis_handler, host):
         'route53': [],
         'instance': [],
         'elb': [],
+        'elastic_ip': [],
     }
     for k, v in match_found.items():
         if k.startswith(redis_handler.route53_hash_prefix):
@@ -152,6 +153,8 @@ def lookup(redis_handler, host):
             categorize_match['instance'].append(v[0])
         elif k.startswith(redis_handler.elb_hash_prefix):
             categorize_match['elb'].append(v[0])
+        elif k.startswith(redis_handler.elastic_ip_hash_prefix):
+            categorize_match['elastic_ip'].append(v[0])
     return categorize_match
 
 
@@ -184,6 +187,13 @@ def formatted_output(redis_handler, match_dict):
                 k = FORMAT_EC2.get(k, k)
                 cli_table.add_row([k, v])
             print cli_table.get_string()
+    if match_dict.get('elastic_ip', None) and len(match_dict['elastic_ip']):
+        print "Elastic IP Details:"
+        cli_table = prettytable.PrettyTable(["Elastic IP", "Instance ID"])
+        for details in match_dict['elastic_ip']:
+            row = [details['elastic_ip'], details['instance_id'], ]
+            cli_table.add_row(row)
+        print cli_table.get_string()
     if match_dict.get('elb', None) and len(match_dict['elb']):
         print "ELB Details:"
         cli_table = prettytable.PrettyTable(["Name", "ELB DNS", "Instance ID",

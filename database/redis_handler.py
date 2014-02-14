@@ -7,10 +7,11 @@ class RedisHandler(object):
         if port is None:
             port = 6379
         self.connection = redis.StrictRedis(host, port)
-        self.route53_hash_prefix = 'aws:route53'         ## Suffix: Type, name
-        self.instance_hash_prefix = 'aws:ec2:instance'   ## Suffix: region, instance id
-        self.elb_hash_prefix = 'aws:ec2:elb'             ## Suffix: region, elb name
-        self.index_prefix = 'aws:index'                  ## Suffix: index_item
+        self.route53_hash_prefix = 'aws:route53'             ## Suffix: Type, name
+        self.instance_hash_prefix = 'aws:ec2:instance'       ## Suffix: region, instance id
+        self.elb_hash_prefix = 'aws:ec2:elb'                 ## Suffix: region, elb name
+        self.elastic_ip_hash_prefix = 'aws:ec2:elastic_ip'   ## Suffix: ip_address
+        self.index_prefix = 'aws:index'                      ## Suffix: index_item
 
     def save_route53_details(self, item_details):
         hash_key = "%s:%s:%s" % (self.route53_hash_prefix,
@@ -40,6 +41,12 @@ class RedisHandler(object):
         hash_key = "%s:%s:%s" % (self.elb_hash_prefix,
                                  item_details['region'],
                                  item_details['elb_name'])
+        status = self.connection.hmset(hash_key, item_details)
+        return (hash_key, status)
+
+    def save_elastic_ip_details(self, item_details):
+        hash_key = "%s:%s" % (self.elastic_ip_hash_prefix,
+                              item_details['elastic_ip'])
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
 
