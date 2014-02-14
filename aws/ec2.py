@@ -57,7 +57,7 @@ class Ec2Handler(object):
         details['elb_dns'] = elb.dns_name
         details['elb_instances'] = ','.join(['%s %s' % (k, v)
                                          for k, v in instance_details.items()])
-        return details
+        return details, instance_details.keys()
 
     def fetch_elastic_ips(self):
         return self.connection.get_all_addresses()

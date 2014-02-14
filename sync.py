@@ -61,8 +61,7 @@ DEFAULTS = {
 ## Global variable for indexing
 index_keys = []
 INDEX = ['name', 'value', 'instance_id', 'private_ip_address', 'ip_address',
-         'ec2_dns', 'ec2_private_dns', 'elb_name', 'elb_dns', 'elb_instances',
-         'elastic_ip',]
+         'ec2_dns', 'ec2_private_dns', 'elb_name', 'elb_dns', 'elastic_ip',]
 
 
 def validate_arguments(option_args):
@@ -208,9 +207,23 @@ def sync_ec2_elbs(ec2_handler, expire):
               % (ec2_handler.region, e.message)
         return
     for elb in elb_list:
-        elb_details = ec2_handler.get_elb_details(elb)
-        elb_details['timestamp'] = int(time.time())
-        hash_key, status = redis_handler.save_elb_details(elb_details)
+        details, instance_id_list = ec2_handler.get_elb_details(elb)
+        details['timestamp'] = int(time.time())
+        for instance_id in instance_id_list:
+            instance_elb_names = redis_handler.get_instance_item_value(
+                region=details['region'], instance_id=instance_id,
+                key='instance_elb_names'
+            ) or ''
+            instance_elb_names = set(instance_elb_names.split(','))
+            if '' in instance_elb_names:
+                instance_elb_names.remove('')
+            instance_elb_names.add(elb.name)
+            instance_elb_names = ','.join(instance_elb_names)
+            redis_handler.add_instance_details(
+                region=details['region'], instance_id=instance_id,
+                key='instance_elb_names', value=instance_elb_names,
+            )
+        hash_key, status = redis_handler.save_elb_details(details)
         index_keys.append(hash_key)
         if expire > 0:
             redis_handler.expire(hash_key, expire)
@@ -240,28 +253,12 @@ def index_records(redis_handler, expire):
         for key, value in details.items():
             if key not in INDEX:
                 continue
-            if key == 'elb_instances':
-                for v in value.split(','):
-                    instance_id = v.split(' ')[0]
-                    elb = redis_handler.get_instance_item_value(
-                        region=details['region'], instance_id=instance_id,
-                        key='elb'
-                    ) or ''
-                    elb_list = elb.split(',')
-                    elb_list.append(details['elb_name'])
-                    ## Remove blank and duplicate values
-                    elb = ','.join([i for i in set(elb_list) if i])
-                    hash_key, status = redis_handler.add_instance_details(
-                        region=details['region'], instance_id=instance_id,
-                        key='elb', value=elb
-                    )
-            else:
-                ## SRV records may contain ','. We need to separate values for
-                ## effective indexing
-                for v in value.split(','):
-                    v = v.split(' ')[-1]
-                    save_index(redis_handler, hash_key, v)
-                    redis_handler.expire_index(v, expire)
+            ## SRV records may contain ','. We need to separate values for
+            ## effective indexing
+            for v in value.split(','):
+                v = v.split(' ')[-1]
+                save_index(redis_handler, hash_key, v)
+                redis_handler.expire_index(v, expire)
 
 def save_index(redis_handler, hash_key, value):
     index_value = redis_handler.get_index(value)

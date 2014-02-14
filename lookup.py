@@ -39,6 +39,7 @@ FORMAT_EC2 = {
     "state": "State",
     "private_ip_address": "Private IP address",
     "ip_address": "IP address",
+    "instance_elb_names": "ELB names",
 }
 EC2_ITEM_ORDER = [
     "instance_id",
@@ -50,6 +51,7 @@ EC2_ITEM_ORDER = [
     "instance_type",
     "private_ip_address",
     "ec2_private_dns",
+    "instance_elb_names",
 ]
 
 
@@ -107,39 +109,23 @@ def lookup(redis_handler, host):
         match_found[hash_key][1] = True
         ## Check for clues in initial search results
         details = match_found[hash_key][0]
-        ## Handle special case for displaying ELB info while searching with
-        ## instance details
-        if hash_key.startswith(redis_handler.instance_hash_prefix) and \
-                'elb' in details:
-            for elb in details['elb'].split(','):
-                if not elb.strip():
+        ## Search indexed items
+        for key, comma_sep_values in details.items():
+            for value in comma_sep_values.split(','):
+                if key not in sync.INDEX + ['instance_elb_names']:
                     continue
-                index_value = redis_handler.get_index(elb)
+                if redis_handler.get_index_hash_key(value) in match_found:
+                    continue
+                index_value = get_index(value)
                 if index_value is None:
                     continue
                 for new_hash_key in index_value.split(','):
                     if new_hash_key in match_found:
                         continue
-                    new_details = redis_handler.get_details(new_hash_key)
-                    if not new_details:
+                    details = redis_handler.get_details(new_hash_key)
+                    if not details:
                         continue
-                    match_found[new_hash_key] = [new_details, False]
-        ## Search indexed items
-        for key, value in details.items():
-            if key not in sync.INDEX:
-                continue
-            if redis_handler.get_index_hash_key(value) in match_found:
-                continue
-            index_value = get_index(value)
-            if index_value is None:
-                continue
-            for new_hash_key in index_value.split(','):
-                if new_hash_key in match_found:
-                    continue
-                details = redis_handler.get_details(new_hash_key)
-                if not details:
-                    continue
-                match_found[new_hash_key] = [details, False]
+                    match_found[new_hash_key] = [details, False]
     categorize_match = {
         'route53': [],
         'instance': [],
