@@ -53,6 +53,7 @@ EC2_ITEM_ORDER = [
     "ec2_private_dns",
     "instance_elb_names",
 ]
+LOOKUP_INDEX = sync.INDEX + ['instance_elb_names']
 
 
 def validate_arguments(option_args):
@@ -112,7 +113,9 @@ def lookup(redis_handler, host):
         ## Search indexed items
         for key, comma_sep_values in details.items():
             for value in comma_sep_values.split(','):
-                if key not in sync.INDEX + ['instance_elb_names']:
+                if key not in LOOKUP_INDEX:
+                    continue
+                if not value:
                     continue
                 if redis_handler.get_index_hash_key(value) in match_found:
                     continue
