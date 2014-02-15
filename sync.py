@@ -278,6 +278,14 @@ def save_index(redis_handler, hash_key, value):
     else:
         redis_handler.delete_index(value)
 
+def clean_stale_entries(redis_handler, clean_route53=True, clean_ec2=True):
+    if clean_route53:
+        redis_handler.clean_route53_entries(valid_keys=index_keys)
+    if clean_ec2:
+        redis_handler.clean_instance_entries(valid_keys=index_keys)
+        redis_handler.clean_elb_entries(valid_keys=index_keys)
+        redis_handler.clean_elastic_ip_entries(valid_keys=index_keys)
+
 
 if __name__ == '__main__':
     option_args = util.parse_options(options=OPTIONS,
@@ -303,6 +311,9 @@ if __name__ == '__main__':
         thread_list.extend(new_threads)
     print 'Sync Started... . . .  .  .   .     .     .'
     gevent.joinall(thread_list)
+    clean_stale_entries(redis_handler,
+                        clean_route53=not arguments['no_route53'],
+                        clean_ec2=not arguments['no_ec2'])
     print 'Details saved. Indexing records!'
     index_records(redis_handler, expire=arguments['expire_duration'])
     print 'Complete'

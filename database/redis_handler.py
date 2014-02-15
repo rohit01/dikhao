@@ -19,6 +19,11 @@ class RedisHandler(object):
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
 
+    def clean_route53_entries(self, valid_keys):
+        for hash_key in self.connection.keys("%s*" % self.route53_hash_prefix):
+            if hash_key not in valid_keys:
+                self.connection.delete(hash_key)
+
     def save_instance_details(self, item_details):
         hash_key = "%s:%s:%s" % (self.instance_hash_prefix,
                                  item_details['region'],
@@ -37,6 +42,11 @@ class RedisHandler(object):
                                  instance_id)
         return self.connection.hget(hash_key, key)
 
+    def clean_instance_entries(self, valid_keys):
+        for hash_key in self.connection.keys("%s*" % self.instance_hash_prefix):
+            if hash_key not in valid_keys:
+                self.connection.delete(hash_key)
+
     def save_elb_details(self, item_details):
         hash_key = "%s:%s:%s" % (self.elb_hash_prefix,
                                  item_details['region'],
@@ -44,11 +54,22 @@ class RedisHandler(object):
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
 
+    def clean_elb_entries(self, valid_keys):
+        for hash_key in self.connection.keys("%s*" % self.elb_hash_prefix):
+            if hash_key not in valid_keys:
+                self.connection.delete(hash_key)
+
     def save_elastic_ip_details(self, item_details):
         hash_key = "%s:%s" % (self.elastic_ip_hash_prefix,
                               item_details['elastic_ip'])
         status = self.connection.hmset(hash_key, item_details)
         return (hash_key, status)
+
+    def clean_elastic_ip_entries(self, valid_keys):
+        for hash_key in self.connection.keys("%s*" %
+                                             self.elastic_ip_hash_prefix):
+            if hash_key not in valid_keys:
+                self.connection.delete(hash_key)
 
     def get_details(self, hash_key):
         return self.connection.hgetall(hash_key)

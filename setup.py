@@ -11,7 +11,7 @@ requires = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
 setuptools.setup(
     name = "dikhao",
     py_modules = ["sync", "lookup"],
-    version = "0.0.1",
+    version = "0.0.2",
     description = "Dikhao: A quick view of all related EC2 & Route53"
                   " resources",
     author = "Rohit Gupta",
@@ -28,10 +28,10 @@ setuptools.setup(
         "Topic :: Utilities",
         "License :: OSI Approved :: MIT License"
     ],
-    long_description = """\
+    long_description = """
         Dikhao - A quick view of all related EC2 & Route53 resources.
-        This project is mainly based on two components:
-        1. sync.py: It sync's all ec2 & route53 data into redis. Deploy this as
+        Main components:
+        1. sync.py: It syncs all ec2 & route53 data into redis. Deploy this as
                     a cron job with high frequency
         2. lookup.py: Easy to use program to perform lookups on demand
     """ )
