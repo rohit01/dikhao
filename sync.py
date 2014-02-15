@@ -311,6 +311,7 @@ if __name__ == '__main__':
         thread_list.extend(new_threads)
     print 'Sync Started... . . .  .  .   .     .     .'
     gevent.joinall(thread_list)
+    print 'Cleanup stale records initiated...'
     clean_stale_entries(redis_handler,
                         clean_route53=not arguments['no_route53'],
                         clean_ec2=not arguments['no_ec2'])

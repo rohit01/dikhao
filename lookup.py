@@ -53,6 +53,12 @@ EC2_ITEM_ORDER = [
     "ec2_private_dns",
     "instance_elb_names",
 ]
+OUTPUT_ORDER = [
+    'route53',
+    'ec2',
+    'elastic_ip',
+    'elb',
+]
 LOOKUP_INDEX = sync.INDEX + ['instance_elb_names']
 
 
@@ -146,10 +152,11 @@ def lookup(redis_handler, host):
             categorize_match['elastic_ip'].append(v[0])
     return categorize_match
 
-
 def formatted_output(redis_handler, match_dict):
+    formatted_dict = {}
+    time_now = int(time.time())
     if match_dict.get('route53', None) and len(match_dict['route53']):
-        print "Route53 Details:"
+        last_updated = 0
         cli_table = prettytable.PrettyTable(["Name", "ttl", "Type", "Value"])
         cli_table.align = 'l'
         for details in match_dict['route53']:
@@ -158,13 +165,22 @@ def formatted_output(redis_handler, match_dict):
                 '\n'.join(details['value'].split(','))
             ]
             cli_table.add_row(row)
-        print cli_table.get_string()
+            if int(details.get('timestamp', 0)) > last_updated:
+                last_updated = int(details.pop('timestamp'))
+        formatted_dict['route53'] = {}
+        formatted_dict['route53']['header'] = "Route53 Details (%s secs ago):" \
+                                    % (time_now - last_updated)
+        formatted_dict['route53']['content'] = [cli_table.get_string()]
     if match_dict.get('instance', None) and len(match_dict['instance']):
-        print "EC2 Instance Details:"
+        last_updated = 0
+        formatted_dict['ec2'] = {}
+        formatted_dict['ec2']['content'] = []
         for details in match_dict['instance']:
             cli_table = prettytable.PrettyTable(["Property", "Value"])
             cli_table.align["Property"] = 'r'
             cli_table.align["Value"] = 'l'
+            if int(details.get('timestamp', 0)) > last_updated:
+                last_updated = int(details.pop('timestamp'))
             ## Display items in order
             for k in EC2_ITEM_ORDER:
                 v = details.pop(k, None)
@@ -175,16 +191,23 @@ def formatted_output(redis_handler, match_dict):
             for k, v in details.items():
                 k = FORMAT_EC2.get(k, k)
                 cli_table.add_row([k, v])
-            print cli_table.get_string()
+            formatted_dict['ec2']['content'].append(cli_table.get_string())
+        formatted_dict['ec2']['header'] = "EC2 Instance Details (%s secs" \
+                                          " ago):" % (time_now - last_updated)
     if match_dict.get('elastic_ip', None) and len(match_dict['elastic_ip']):
-        print "Elastic IP Details:"
+        last_updated = 0
         cli_table = prettytable.PrettyTable(["Elastic IP", "Instance ID"])
         for details in match_dict['elastic_ip']:
             row = [details['elastic_ip'], details['instance_id'], ]
             cli_table.add_row(row)
-        print cli_table.get_string()
+            if int(details.get('timestamp', 0)) > last_updated:
+                last_updated = int(details.pop('timestamp'))
+        formatted_dict['elastic_ip'] = {}
+        formatted_dict['elastic_ip']['header'] = "Elastic IP Details (%s" \
+            " secs ago):" % (time_now - last_updated)
+        formatted_dict['elastic_ip']['content'] = [cli_table.get_string()]
     if match_dict.get('elb', None) and len(match_dict['elb']):
-        print "ELB Details:"
+        last_updated = 0
         cli_table = prettytable.PrettyTable(["Name", "ELB DNS", "Instance ID",
             "State"])
         cli_table.align = 'l'
@@ -199,7 +222,21 @@ def formatted_output(redis_handler, match_dict):
             cli_table.add_row([details['elb_name'], details['elb_dns'],
                 '\n'.join(instance_id_list), '\n'.join(instance_state_list),
             ])
-        print cli_table.get_string()
+            if int(details.get('timestamp', 0)) > last_updated:
+                last_updated = int(details.pop('timestamp'))
+        formatted_dict['elb'] = {}
+        formatted_dict['elb']['header'] = "ELB Details (%s secs ago):" \
+                                          % (time_now - last_updated)
+        formatted_dict['elb']['content'] = [cli_table.get_string()]
+    return formatted_dict
+
+def print_details(details):
+    for item in OUTPUT_ORDER:
+        if details.get(item, None):
+            print details[item]['header']
+            for content in details[item]['content']:
+                print content
+            details.pop(item, None)
 
 
 if __name__ == '__main__':
@@ -210,7 +247,8 @@ if __name__ == '__main__':
         host=arguments['redis_host'], port=arguments['redis_port_no'])
     match_dict = lookup(redis_handler, host=arguments['input_lookup'])
     if match_dict:
-        formatted_output(redis_handler, match_dict)
+        details = formatted_output(redis_handler, match_dict)
+        print_details(details)
     else:
         print 'Sorry! No entry found'
         sys.exit(1)
