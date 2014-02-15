@@ -1,2 +1,3 @@
 boto==2.24.0
 redis==2.9.1
+-e git+git@github.com:rohit01/prettytable.git@47d30e44f13fa192f96cca904777d94f230ede5b#egg=prettytable
