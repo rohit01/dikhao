@@ -9,3 +9,8 @@ venv
 # Unit test / coverage reports
 .coverage
 .tox
+
+# build directories
+build/
+dikhao.egg-info/
+dist/
