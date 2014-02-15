@@ -25,7 +25,8 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Intended Audience :: Developers",
         "Development Status :: 4 - Beta",
-        "Topic :: IAAS :: platform :: Libraries :: Python Modules",
+        "Topic :: Utilities",
+        "License :: OSI Approved :: MIT License"
     ],
     long_description = """\
         Dikhao - A quick view of all related EC2 & Route53 resources.
