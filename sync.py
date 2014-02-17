@@ -33,7 +33,8 @@ OPTIONS = {
     'e': "expire_duration;Duration (in seconds) for which, dns entries are"
          " stored in redis. Pass 0 for infinity. Default: 86400 (1 Day)",
     'H': "redis_host;Address of redis server. Default: localhost",
-    'p': "redis_port_no;Port No. of redis server. Default: 6379",
+    'P': "redis_port_no;Port No. of redis server. Default: 6379",
+    'p': "redis_password;Redis password (optional)",
 }
 FLAG_OPTIONS = {
     'E': "no_ec2;Dont sync ec2 instance details in redis. Private ip and "
@@ -56,6 +57,7 @@ DEFAULTS = {
     "no_ec2": False,
     "no_route53": False,
     "ttl": False,
+    "redis_password": None,
 }
 
 ## Global variable for indexing
@@ -298,8 +300,8 @@ if __name__ == '__main__':
     route53_handler = aws.route53.Route53Handler(apikey=arguments['apikey'],
         apisecret=arguments['apisecret'])
     redis_handler = database.redis_handler.RedisHandler(
-        host=arguments['redis_host'], port=arguments['redis_port_no'])
-
+        host=arguments['redis_host'], port=arguments['redis_port_no'],
+        password=arguments['redis_password'])
     thread_list = []
     if not arguments['no_route53']:
         new_threads = sync_route53(route53_handler, redis_handler,

@@ -26,8 +26,8 @@ def status():
 
 def sync_everything():
     redis_handler = database.redis_handler.RedisHandler(
-        host=config.REDIS_HOST,
-        port=config.REDIS_PORT_NO
+        host=config.REDIS_HOST, port=config.REDIS_PORT_NO,
+        password=config.REDIS_PASSWORD
     )
     thread_list = []
     if not config.NO_ROUTE53:
@@ -68,7 +68,7 @@ def search(input_lookup):
     Perform lookup for given input in redis database
     """
     redis_handler = database.redis_handler.RedisHandler(host=config.REDIS_HOST,
-        port=config.REDIS_PORT_NO)
+        port=config.REDIS_PORT_NO, password=config.REDIS_PASSWORD)
     match_dict = lookup.search(redis_handler, host=input_lookup)
     if match_dict:
         details = lookup.formatted_output(redis_handler, match_dict)
@@ -77,26 +77,6 @@ def search(input_lookup):
     else:
         return 'Sorry! No entry found'
 
-
-@app.route("/config", methods=['GET', 'POST'])
-def config_details():
-    """
-    Return config details for verification
-    """
-    config_list = []
-    config_list.append("AWS_ACCESS_KEY_ID: %s" % config.AWS_ACCESS_KEY_ID[:5])
-    config_list.append("AWS_SECRET_ACCESS_KEY: %s" %
-                       config.AWS_SECRET_ACCESS_KEY[:5])
-    config_list.append("REDIS_HOST: %s" % config.REDIS_HOST[:5])
-    config_list.append("REDIS_PORT_NO: %s" % config.REDIS_PORT_NO[:5])
-    config_list.append("HOSTED_ZONES: %s" % config.HOSTED_ZONES)
-    config_list.append("REGIONS: %s" % config.REGIONS)
-    config_list.append("EXPIRE_DURATION: %s" % config.EXPIRE_DURATION)
-    config_list.append("TTL: %s" % config.TTL)
-    config_list.append("NO_EC2: %s" % config.NO_EC2)
-    config_list.append("NO_ROUTE53: %s" % config.NO_ROUTE53)
-    return "<HTML><HEAD></HEAD><BODY><PRE>%s</PRE></BODY></HTML>" \
-           % '\n'.join(config_list)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
