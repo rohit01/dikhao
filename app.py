@@ -72,8 +72,7 @@ def search(input_lookup):
     match_dict = lookup.search(redis_handler, host=input_lookup)
     if match_dict:
         details = lookup.formatted_output(redis_handler, match_dict)
-        return "<HTML><HEAD></HEAD><BODY><PRE>%s</PRE></BODY></HTML>" \
-                % lookup.string_details(details)
+        return lookup.string_details(details)
     else:
         return 'Sorry! No entry found'
 

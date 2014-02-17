@@ -11,7 +11,7 @@ requires = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
 setuptools.setup(
     name = "dikhao",
     py_modules = ["sync", "lookup"],
-    version = "0.0.2",
+    version = "0.0.3",
     description = "Dikhao: A quick view of all related EC2 & Route53"
                   " resources",
     author = "Rohit Gupta",
