@@ -78,6 +78,26 @@ def search(input_lookup):
         return 'Sorry! No entry found'
 
 
+@app.route("/config", methods=['GET', 'POST'])
+def config_details():
+    """
+    Return config details for verification
+    """
+    config_list = []
+    config_list.append("AWS_ACCESS_KEY_ID: %s" % config.AWS_ACCESS_KEY_ID[:5])
+    config_list.append("AWS_SECRET_ACCESS_KEY: %s" %
+                       config.AWS_SECRET_ACCESS_KEY[:5])
+    config_list.append("REDIS_HOST: %s" % config.REDIS_HOST[:5])
+    config_list.append("REDIS_PORT_NO: %s" % config.REDIS_PORT_NO[:5])
+    config_list.append("HOSTED_ZONES: %s" % config.HOSTED_ZONES)
+    config_list.append("REGIONS: %s" % config.REGIONS)
+    config_list.append("EXPIRE_DURATION: %s" % config.EXPIRE_DURATION)
+    config_list.append("TTL: %s" % config.TTL)
+    config_list.append("NO_EC2: %s" % config.NO_EC2)
+    config_list.append("NO_ROUTE53: %s" % config.NO_ROUTE53)
+    return "<HTML><HEAD></HEAD><BODY><PRE>%s</PRE></BODY></HTML>" \
+           % '\n'.join(config_list)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
