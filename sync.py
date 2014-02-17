@@ -57,7 +57,7 @@ DEFAULTS = {
     "no_ec2": False,
     "no_route53": False,
     "ttl": False,
-    "redis_password": None,
+    "redis_password": '',
 }
 
 ## Global variable for indexing
@@ -77,6 +77,8 @@ def validate_arguments(option_args):
     redis_host = option_args.redis_host or DEFAULTS.get('redis_host', None)
     redis_port_no = option_args.redis_port_no or DEFAULTS.get('redis_port_no',
                                                               None)
+    redis_password = option_args.redis_password or DEFAULTS.get(
+        'redis_password', None)
     no_ec2 = option_args.no_ec2 or DEFAULTS.get('no_ec2', None)
     no_route53 = option_args.no_route53 or DEFAULTS.get('no_route53', None)
     ttl = option_args.ttl or DEFAULTS.get('ttl', None)
@@ -88,6 +90,7 @@ def validate_arguments(option_args):
         "expire_duration": expire_duration,
         "redis_host": redis_host,
         "redis_port_no": redis_port_no,
+        "redis_password": redis_password,
         "no_ec2": no_ec2,
         "no_route53": no_route53,
         "ttl": ttl,
