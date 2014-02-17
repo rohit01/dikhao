@@ -13,8 +13,8 @@ Dikhao is a project to map every EC2 resource will all related components and pr
 #### Planned features:
 1. ~~Sync and lookup for elastic ip~~
 2. Sync and lookup for VPC
-3. Heroku deployment support
-4. hubot integration
+3. ~~Heroku deployment support~~
+4. ~~hubot integration~~
 5. ~~setup.py installation file~~
 6. ~~Grabbing a space in pip repository~~
 7. Great documentation

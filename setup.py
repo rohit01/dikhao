@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
 # Python installation script
+# Update pypi package after every update:
+# $ python setup.py sdist bdist_wininst upload
 # Author - @rohit01
 
 import setuptools
@@ -11,7 +13,7 @@ requires = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
 setuptools.setup(
     name = "dikhao",
     py_modules = ["sync", "lookup"],
-    version = "0.0.3",
+    version = "0.0.4",
     description = "Dikhao: A quick view of all related EC2 & Route53"
                   " resources",
     author = "Rohit Gupta",

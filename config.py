@@ -9,6 +9,9 @@ REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT_NO = os.environ.get('REDIS_PORT_NO')
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 
+## Application port
+PORT = int(os.environ.get('PORT', 5000))
+
 ## Route53 hosted zone named separated by comma
 HOSTED_ZONES = 'all'
 
