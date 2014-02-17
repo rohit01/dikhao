@@ -81,7 +81,7 @@ def validate_arguments(option_args):
         sys.exit(1)
     return arguments
 
-def get_index(host):
+def get_index(redis_handler, host):
     fqdn, pqdn = util.generate_fqdn_and_pqdn(host)
     ## Get Index
     fqdn_index = redis_handler.get_index(fqdn) or ''
@@ -92,8 +92,8 @@ def get_index(host):
     index_value = ','.join(set(index_value.split(',')))
     return index_value
 
-def lookup(redis_handler, host):
-    index_value = get_index(host)
+def search(redis_handler, host):
+    index_value = get_index(redis_handler, host)
     if not index_value:
         return None
     ## Initial search
@@ -125,7 +125,7 @@ def lookup(redis_handler, host):
                     continue
                 if redis_handler.get_index_hash_key(value) in match_found:
                     continue
-                index_value = get_index(value)
+                index_value = get_index(redis_handler, value)
                 if index_value is None:
                     continue
                 for new_hash_key in index_value.split(','):
@@ -230,13 +230,15 @@ def formatted_output(redis_handler, match_dict):
         formatted_dict['elb']['content'] = [cli_table.get_string()]
     return formatted_dict
 
-def print_details(details):
+def string_details(details):
+    output_list = []
     for item in OUTPUT_ORDER:
         if details.get(item, None):
-            print details[item]['header']
+            output_list.append(details[item]['header'])
             for content in details[item]['content']:
-                print content
+                output_list.append(content)
             details.pop(item, None)
+    return '\n'.join(output_list)
 
 
 if __name__ == '__main__':
@@ -245,10 +247,10 @@ if __name__ == '__main__':
     arguments = validate_arguments(option_args)
     redis_handler = database.redis_handler.RedisHandler(
         host=arguments['redis_host'], port=arguments['redis_port_no'])
-    match_dict = lookup(redis_handler, host=arguments['input_lookup'])
+    match_dict = search(redis_handler, host=arguments['input_lookup'])
     if match_dict:
         details = formatted_output(redis_handler, match_dict)
-        print_details(details)
+        print string_details(details)
     else:
         print 'Sorry! No entry found'
         sys.exit(1)
