@@ -4,10 +4,13 @@
 # Author - @rohit01
 
 import os
+import gevent
 import config
 import lookup
 import sync
 import database
+import aws.ec2
+import aws.route53
 from flask import Flask
 
 
@@ -21,13 +24,42 @@ def status():
     return 'OK'
 
 
-@app.route("/sync_aws", methods=['GET', 'POST'])
-def sync_aws():
+def sync_everything():
+    redis_handler = database.redis_handler.RedisHandler(
+        host=config.REDIS_HOST,
+        port=config.REDIS_PORT_NO
+    )
+    thread_list = []
+    if not config.NO_ROUTE53:
+        route53_handler = aws.route53.Route53Handler(
+            apikey=config.AWS_ACCESS_KEY_ID,
+            apisecret=config.AWS_SECRET_ACCESS_KEY)
+        new_threads = sync.sync_route53(route53_handler, redis_handler,
+            config.HOSTED_ZONES, expire=config.EXPIRE_DURATION, ttl=config.TTL)
+        thread_list.extend(new_threads)
+    if not config.NO_EC2:
+        new_threads = sync.sync_ec2(redis_handler, apikey=config.AWS_ACCESS_KEY_ID,
+            apisecret=config.AWS_SECRET_ACCESS_KEY, regions=config.REGIONS,
+            expire=config.EXPIRE_DURATION)
+        thread_list.extend(new_threads)
+    print 'Sync Started... . . .  .  .   .     .     .'
+    gevent.joinall(thread_list, timeout=120)
+    print 'Cleanup stale records initiated...'
+    sync.clean_stale_entries(redis_handler,
+                             clean_route53=not config.NO_ROUTE53,
+                             clean_ec2=not config.NO_EC2)
+    print 'Details saved. Indexing records!'
+    sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
+    print 'Complete'
+
+
+@app.route("/sync", methods=['GET', 'POST'])
+def sync_details():
     """
-    Syncs AWS information into redis and replies status
+    Sync AWS details into redis and reply status
     """
-    ## TODO
-    return 'TODO'
+    gevent.spawn_raw(sync_everything)
+    return 'OK'
 
 
 @app.route('/lookup/<input_lookup>', methods=['GET', 'POST'])

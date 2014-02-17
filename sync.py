@@ -173,15 +173,18 @@ def sync_ec2(redis_handler, apikey, apisecret, regions, expire):
     thread_list = []
     for region in region_list:
         ec2_handler = aws.ec2.Ec2Handler(apikey, apisecret, region)
-        thread = gevent.spawn(sync_ec2_instances, ec2_handler, expire)
+        thread = gevent.spawn(sync_ec2_instances, redis_handler, ec2_handler,
+                              expire)
         thread_list.append(thread)
-        thread = gevent.spawn(sync_ec2_elbs, ec2_handler, expire)
+        thread = gevent.spawn(sync_ec2_elbs, redis_handler, ec2_handler,
+                              expire)
         thread_list.append(thread)
-        thread = gevent.spawn(sync_elastic_ips, ec2_handler, expire)
+        thread = gevent.spawn(sync_elastic_ips, redis_handler, ec2_handler,
+                              expire)
         thread_list.append(thread)
     return thread_list
 
-def sync_ec2_instances(ec2_handler, expire):
+def sync_ec2_instances(redis_handler, ec2_handler, expire):
     global index_keys
     try:
         instance_list = ec2_handler.fetch_all_instances()
@@ -198,7 +201,7 @@ def sync_ec2_instances(ec2_handler, expire):
             redis_handler.expire(hash_key, expire)
     print "Instance sync complete for ec2 region: %s" % ec2_handler.region
 
-def sync_ec2_elbs(ec2_handler, expire):
+def sync_ec2_elbs(redis_handler, ec2_handler, expire):
     global index_keys
     try:
         elb_list = ec2_handler.fetch_all_elbs()
@@ -229,7 +232,7 @@ def sync_ec2_elbs(ec2_handler, expire):
             redis_handler.expire(hash_key, expire)
     print "ELB sync complete for ec2 region: %s" % ec2_handler.region
 
-def sync_elastic_ips(ec2_handler, expire):
+def sync_elastic_ips(redis_handler, ec2_handler, expire):
     global index_keys
     try:
         elastic_ip_list = ec2_handler.fetch_elastic_ips()
