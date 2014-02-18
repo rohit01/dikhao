@@ -8,7 +8,7 @@
 #   Rohit Gupta
 
 module.exports = (robot) ->
-  url = "http://dikhao.herokuapp.com"
+  url = "<Application URL>"
   commandName = 'dikhao'
 
   robot.respond /(dikhao|batao) (.*)/i, (msg) ->

@@ -4,6 +4,7 @@
 # Author - @rohit01
 
 import os
+import time
 import gevent
 import config
 import lookup
@@ -24,11 +25,7 @@ def status():
     return 'OK'
 
 
-def sync_everything():
-    redis_handler = database.redis_handler.RedisHandler(
-        host=config.REDIS_HOST, port=config.REDIS_PORT_NO,
-        password=config.REDIS_PASSWORD
-    )
+def sync_everything(redis_handler):
     thread_list = []
     if not config.NO_ROUTE53:
         route53_handler = aws.route53.Route53Handler(
@@ -50,6 +47,7 @@ def sync_everything():
                              clean_ec2=not config.NO_EC2)
     print 'Details saved. Indexing records!'
     sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
+    redis_handler.delete_lock(timeout=config.MIN_SYNC_GAP)
     print 'Complete'
 
 
@@ -58,8 +56,25 @@ def sync_details():
     """
     Sync AWS details into redis and reply status
     """
-    gevent.spawn_raw(sync_everything)
-    return 'OK'
+    redis_handler = database.redis_handler.RedisHandler(
+        host=config.REDIS_HOST,
+        port=config.REDIS_PORT_NO,
+        password=config.REDIS_PASSWORD
+    )
+    lock_time, expire_timeout = redis_handler.get_lock()
+    if lock_time in ['0', 0]:
+        expire_timeout = expire_timeout if expire_timeout else 0
+        return "Synced recently. It can be started again after %s secs" \
+               % expire_timeout
+    elif lock_time:
+        return "Sync in progress. Started %s secs ago" \
+               % (int(time.time()) - int(lock_time))
+    else:
+        if config.SYNC_LOCK:
+            timeout = config.SYNC_TIMEOUT + config.MIN_SYNC_GAP
+            redis_handler.save_lock(timeout=timeout)
+        gevent.spawn_raw(sync_everything, redis_handler)
+    return 'OK - Sync initiated'
 
 
 @app.route('/lookup/<input_lookup>', methods=['GET', 'POST'])
@@ -78,4 +93,4 @@ def search(input_lookup):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=config.PORT)
+    app.run(host='0.0.0.0', port=config.PORT, debug=True)

@@ -1,4 +1,6 @@
 import redis
+import time
+
 
 class RedisHandler(object):
     def __init__(self, host=None, port=None, password=None):
@@ -12,6 +14,7 @@ class RedisHandler(object):
         self.elb_hash_prefix = 'aws:ec2:elb'                 ## Suffix: region, elb name
         self.elastic_ip_hash_prefix = 'aws:ec2:elastic_ip'   ## Suffix: ip_address
         self.index_prefix = 'aws:index'                      ## Suffix: index_item
+        self.lock_hash_key = 'dikhao:lock_sync'
 
     def save_route53_details(self, item_details):
         hash_key = "%s:%s:%s" % (self.route53_hash_prefix,
@@ -93,6 +96,19 @@ class RedisHandler(object):
     def delete_index(self, key):
         hash_key = "%s:%s" % (self.index_prefix, key)
         return self.connection.delete(hash_key)
+
+    def save_lock(self, timeout):
+        ## Set lock message as current timestamp
+        self.connection.set(self.lock_hash_key, str(int(time.time())))
+        self.connection.expire(self.lock_hash_key, timeout)
+
+    def get_lock(self):
+        return (self.connection.get(self.lock_hash_key),
+                self.connection.ttl(self.lock_hash_key))
+
+    def delete_lock(self, timeout=0):
+        self.connection.set(self.lock_hash_key, '0')
+        self.connection.expire(self.lock_hash_key, timeout)
 
     def exists(self, hash_key):
         return self.connection.exists(hash_key)
