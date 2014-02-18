@@ -40,7 +40,8 @@ def sync_everything(redis_handler):
             expire=config.EXPIRE_DURATION)
         thread_list.extend(new_threads)
     print 'Sync Started... . . .  .  .   .     .     .'
-    gevent.joinall(thread_list, timeout=120)
+    gevent.joinall(thread_list, timeout=config.SYNC_TIMEOUT)
+    gevent.killall(thread_list)
     print 'Cleanup stale records initiated...'
     sync.clean_stale_entries(redis_handler,
                              clean_route53=not config.NO_ROUTE53,
