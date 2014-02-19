@@ -21,7 +21,6 @@ redis_handler = database.redis_handler.RedisHandler(
     host=config.REDIS_HOST,
     port=config.REDIS_PORT_NO,
     password=config.REDIS_PASSWORD,
-    connection_pool=config.REDIS_MAX_CONNECTIONS,
 )
 
 
