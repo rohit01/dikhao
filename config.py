@@ -15,7 +15,7 @@ PORT = int(os.environ.get('PORT', 5000))
 ## Sync lock settings to prevent Myltiple sync. Setting this as False may
 ## overload the server
 SYNC_LOCK = os.environ.get('SYNC_LOCK', True)
-SYNC_TIMEOUT = int(os.environ.get('SYNC_LOCK_TIMEOUT', 600))
+SYNC_TIMEOUT = int(os.environ.get('SYNC_TIMEOUT', 600))
 MIN_SYNC_GAP = int(os.environ.get('MIN_SYNC_GAP', 30))
 
 ## Route53 hosted zone named separated by comma
