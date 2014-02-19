@@ -11,9 +11,10 @@ import prettytable
 import util
 import sync
 import database.redis_handler
+from setup import VERSION
 
-VERSION = """Version: 0.1,
-Author: Rohit Gupta - @rohit01"""
+VERSION = """Version: %s,
+Author: Rohit Gupta - @rohit01""" % VERSION
 DESCRIPTION = """Program to perform dns and reverse dns lookup from locally
 synced redis DB.
 """

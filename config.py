@@ -8,6 +8,7 @@ AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
 REDIS_PORT_NO = int(os.environ.get('REDIS_PORT_NO', 6379))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+REDIS_MAX_CONNECTIONS = int(os.environ.get('REDIS_MAX_CONNECTIONS', 10))
 
 ## Application port
 PORT = int(os.environ.get('PORT', 5000))

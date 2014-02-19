@@ -13,19 +13,27 @@ import database
 import aws.ec2
 import aws.route53
 from flask import Flask
+from setup import VERSION
 
 
 app = Flask(__name__)
+redis_handler = database.redis_handler.RedisHandler(
+    host=config.REDIS_HOST,
+    port=config.REDIS_PORT_NO,
+    password=config.REDIS_PASSWORD,
+    connection_pool=config.REDIS_MAX_CONNECTIONS,
+)
+
 
 @app.route("/")
 def status():
     """
     Returns the status page
     """
-    return 'OK'
+    return 'Ok - Version: %s' % VERSION
 
 
-def sync_everything(redis_handler):
+def sync_everything():
     thread_list = []
     if not config.NO_ROUTE53:
         route53_handler = aws.route53.Route53Handler(
@@ -57,11 +65,6 @@ def sync_details():
     """
     Sync AWS details into redis and reply status
     """
-    redis_handler = database.redis_handler.RedisHandler(
-        host=config.REDIS_HOST,
-        port=config.REDIS_PORT_NO,
-        password=config.REDIS_PASSWORD
-    )
     lock_time, expire_timeout = redis_handler.get_lock()
     if lock_time in ['0', 0]:
         expire_timeout = expire_timeout if expire_timeout else 0
@@ -74,7 +77,7 @@ def sync_details():
         if config.SYNC_LOCK:
             timeout = config.SYNC_TIMEOUT + config.MIN_SYNC_GAP
             redis_handler.save_lock(timeout=timeout)
-        gevent.spawn_raw(sync_everything, redis_handler)
+        gevent.spawn_raw(sync_everything)
     return 'OK - Sync initiated'
 
 
@@ -83,8 +86,6 @@ def search(input_lookup):
     """
     Perform lookup for given input in redis database
     """
-    redis_handler = database.redis_handler.RedisHandler(host=config.REDIS_HOST,
-        port=config.REDIS_PORT_NO, password=config.REDIS_PASSWORD)
     match_dict = lookup.search(redis_handler, host=input_lookup)
     if match_dict:
         details = lookup.formatted_output(redis_handler, match_dict)
