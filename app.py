@@ -9,15 +9,14 @@ import gevent
 import config
 import lookup
 import sync
-import database
-import aws.ec2
-import aws.route53
+import dikhao.database
+import dikhao.aws.route53
 from flask import Flask
 from setup import VERSION
 
 
 app = Flask(__name__)
-redis_handler = database.redis_handler.RedisHandler(
+redis_handler = dikhao.database.redis_handler.RedisHandler(
     host=config.REDIS_HOST,
     port=config.REDIS_PORT_NO,
     password=config.REDIS_PASSWORD,
@@ -35,7 +34,7 @@ def status():
 def sync_everything():
     thread_list = []
     if not config.NO_ROUTE53:
-        route53_handler = aws.route53.Route53Handler(
+        route53_handler = dikhao.aws.route53.Route53Handler(
             apikey=config.AWS_ACCESS_KEY_ID,
             apisecret=config.AWS_SECRET_ACCESS_KEY)
         new_threads = sync.sync_route53(route53_handler, redis_handler,

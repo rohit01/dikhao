@@ -1,5 +1,6 @@
 import boto.ec2
 import boto.ec2.elb
+import dikhao.util as util
 
 def get_region_list():
     regions = boto.ec2.get_regions('ec2')
@@ -39,6 +40,7 @@ class Ec2Handler(object):
         details['ec2_dns'] = instance.dns_name
         details['ec2_private_dns'] = instance.private_dns_name
         details['state'] = instance.state
+        details = util.convert_none_into_blank_values(details)
         return details
 
     def fetch_all_elbs(self):
@@ -57,13 +59,15 @@ class Ec2Handler(object):
         details['elb_dns'] = elb.dns_name
         details['elb_instances'] = ','.join(['%s %s' % (k, v)
                                          for k, v in instance_details.items()])
+        details = util.convert_none_into_blank_values(details)
         return details, instance_details.keys()
 
     def fetch_elastic_ips(self):
         return self.connection.get_all_addresses()
 
     def get_elastic_ip_detail(self, elastic_ip):
-        return {
+        details = {
             'elastic_ip': elastic_ip.public_ip,
             'instance_id': elastic_ip.instance_id,
         }
+        return util.convert_none_into_blank_values(details)

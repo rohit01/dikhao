@@ -30,3 +30,9 @@ def generate_fqdn_and_pqdn(host):
     if host.endswith('.'):
         return (host, host[:-1])
     return ("%s." % host, host)
+
+def convert_none_into_blank_values(details):
+    for k, v in details.items():
+        if v == None:
+            details[k] = ''
+    return details
