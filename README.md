@@ -19,5 +19,6 @@ Dikhao is a project to map every EC2 resource will all related components and pr
 6. ~~Grabbing a space in pip repository~~
 7. Great documentation
 8. *Release and plan new features!*
+9. S3 sync and lookups
 
 ** Instructions will be added soon **
