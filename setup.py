@@ -14,7 +14,7 @@ VERSION = "0.0.8"
 if __name__ == '__main__':
     setuptools.setup(
         name = "dikhao",
-        py_modules = ["sync", "lookup"],
+        py_modules = ["padho", "batao"],
         version = VERSION,
         description = "Dikhao: A quick view of all related EC2 & Route53"
                       " resources",
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         long_description = """
             Dikhao - A quick view of all related EC2 & Route53 resources.
             Main components:
-            1. sync.py: It syncs all ec2 & route53 data into redis. Deploy this
+            1. padho.py: It syncs all ec2 & route53 data into redis. Deploy this
                         as a cron job
-            2. lookup.py: Easy to use program to perform lookups on demand
+            2. batao.py: Easy to use program to perform lookups on demand
         """ )
