@@ -7,8 +7,8 @@ import os
 import time
 import gevent
 import config
-import lookup
-import sync
+import dikhao.search
+import dikhao.sync
 import dikhao.database
 import dikhao.aws.route53
 from flask import Flask
@@ -20,6 +20,7 @@ redis_handler = dikhao.database.redis_handler.RedisHandler(
     host=config.REDIS_HOST,
     port=config.REDIS_PORT_NO,
     password=config.REDIS_PASSWORD,
+    timeout=config.REDIS_TIMEOUT,
 )
 
 
@@ -37,11 +38,11 @@ def sync_everything():
         route53_handler = dikhao.aws.route53.Route53Handler(
             apikey=config.AWS_ACCESS_KEY_ID,
             apisecret=config.AWS_SECRET_ACCESS_KEY)
-        new_threads = sync.sync_route53(route53_handler, redis_handler,
+        new_threads = dikhao.sync.sync_route53(route53_handler, redis_handler,
             config.HOSTED_ZONES, expire=config.EXPIRE_DURATION, ttl=config.TTL)
         thread_list.extend(new_threads)
     if not config.NO_EC2:
-        new_threads = sync.sync_ec2(redis_handler, apikey=config.AWS_ACCESS_KEY_ID,
+        new_threads = dikhao.sync.sync_ec2(redis_handler, apikey=config.AWS_ACCESS_KEY_ID,
             apisecret=config.AWS_SECRET_ACCESS_KEY, regions=config.REGIONS,
             expire=config.EXPIRE_DURATION)
         thread_list.extend(new_threads)
@@ -49,11 +50,11 @@ def sync_everything():
     gevent.joinall(thread_list, timeout=config.SYNC_TIMEOUT)
     gevent.killall(thread_list)
     print 'Cleanup stale records initiated...'
-    sync.clean_stale_entries(redis_handler,
+    dikhao.sync.clean_stale_entries(redis_handler,
                              clean_route53=not config.NO_ROUTE53,
                              clean_ec2=not config.NO_EC2)
     print 'Details saved. Indexing records!'
-    sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
+    dikhao.sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
     redis_handler.delete_lock(timeout=config.MIN_SYNC_GAP)
     print 'Complete'
 
@@ -84,13 +85,13 @@ def search(input_lookup):
     """
     Perform lookup for given input in redis database
     """
-    match_dict = lookup.search(redis_handler, host=input_lookup)
+    match_dict = dikhao.search.search(redis_handler, host=input_lookup)
     if match_dict:
-        details = lookup.formatted_output(redis_handler, match_dict)
-        return lookup.string_details(details)
+        details = dikhao.search.formatted_output(redis_handler, match_dict)
+        return dikhao.search.string_details(details)
     else:
         return 'Sorry! No entry found'
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=config.PORT, debug=True)
+    app.run(host='0.0.0.0', port=config.PORT, debug=config.DEBUG)

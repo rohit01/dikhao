@@ -3,12 +3,13 @@ import time
 
 
 class RedisHandler(object):
-    def __init__(self, host=None, port=None, password=None):
+    def __init__(self, host=None, port=None, password=None, timeout=None):
         if host is None:
             host = '127.0.0.1'
         if port is None:
             port = 6379
-        self.connection = redis.Redis(host=host, port=port, password=password)
+        self.connection = redis.Redis(host=host, port=port, password=password,
+            socket_timeout=timeout)
         self.route53_hash_prefix = 'aws:route53'             ## Suffix: Type, name
         self.instance_hash_prefix = 'aws:ec2:instance'       ## Suffix: region, instance id
         self.elb_hash_prefix = 'aws:ec2:elb'                 ## Suffix: region, elb name

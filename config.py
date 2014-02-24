@@ -1,5 +1,8 @@
 import os
 
+## Set as true to run on debug mode
+DEBUG = os.environ.get('DEBUG', False)
+
 ## AWS Credentials
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
@@ -8,6 +11,7 @@ AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
 REDIS_PORT_NO = int(os.environ.get('REDIS_PORT_NO', 6379))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+REDIS_TIMEOUT = int(os.environ.get('REDIS_TIMEOUT', 2))
 
 ## Application port
 PORT = int(os.environ.get('PORT', 5000))
