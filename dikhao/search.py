@@ -142,6 +142,8 @@ def formatted_output(redis_handler, match_dict):
             cli_table.header = False
             if int(details.get('timestamp', 0)) > last_updated:
                 last_updated = int(details.pop('timestamp'))
+            else:
+                details.pop('timestamp', 0)
             ## Display items in order
             for k in EC2_ITEM_ORDER:
                 v = details.pop(k, None)
