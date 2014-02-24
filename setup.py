@@ -36,6 +36,6 @@ if __name__ == '__main__':
             Dikhao - A quick view of all related EC2 & Route53 resources.
             Main components:
             1. sync.py: It syncs all ec2 & route53 data into redis. Deploy this
-                        as a cron job with high frequency
+                        as a cron job
             2. lookup.py: Easy to use program to perform lookups on demand
         """ )

@@ -19,7 +19,7 @@ VERSION = """Version: %s,
 Author: Rohit Gupta - @rohit01""" % setup.VERSION
 DESCRIPTION = """Utility to sync route53, ec2 details in redis. The local
 redis cache helps in avoiding slow AWS API calls, thereby making the dns lookup
-much faster. This program should be deployed as a cron job with high frequency.
+much faster. This program should be deployed as a cron job.
 """
 OPTIONS = {
     'a': "apikey;AWS Credential - API key",
