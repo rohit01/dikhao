@@ -139,6 +139,7 @@ def formatted_output(redis_handler, match_dict):
             cli_table = prettytable.PrettyTable(["Property", "Value"])
             cli_table.align["Property"] = 'r'
             cli_table.align["Value"] = 'l'
+            cli_table.header = False
             if int(details.get('timestamp', 0)) > last_updated:
                 last_updated = int(details.pop('timestamp'))
             ## Display items in order
