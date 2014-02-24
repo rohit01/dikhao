@@ -9,7 +9,7 @@ import setuptools
 
 requires = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
             'gevent>=1.0', 'Flask==0.10.1', ]
-VERSION = "0.0.7"
+VERSION = "0.0.8"
 
 if __name__ == '__main__':
     setuptools.setup(

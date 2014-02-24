@@ -3,11 +3,13 @@ import time
 
 
 class RedisHandler(object):
-    def __init__(self, host=None, port=None, password=None, timeout=None):
+    def __init__(self, host=None, port=None, password=None, timeout=None,
+                 max_connections=None):
         if host is None:
             host = '127.0.0.1'
         if port is None:
             port = 6379
+        self.max_connections = max_connections
         self.connection = redis.Redis(host=host, port=port, password=password,
             socket_timeout=timeout)
         self.route53_hash_prefix = 'aws:route53'             ## Suffix: Type, name
@@ -16,6 +18,20 @@ class RedisHandler(object):
         self.elastic_ip_hash_prefix = 'aws:ec2:elastic_ip'   ## Suffix: ip_address
         self.index_prefix = 'aws:index'                      ## Suffix: index_item
         self.lock_hash_key = 'dikhao:lock_sync'
+
+    def close_extra_connections(self):
+        client_list = self.connection.client_list()
+        if len(client_list) < (self.max_connections - 1):
+            return
+        age_address_mapping = {}
+        for client in client_list:
+            age_address_mapping[int(client['age'])] = client['addr']
+        age_list = age_address_mapping.keys()
+        age_list.sort(reverse=True)
+        for age in age_list:
+            self.connection.client_kill(age_address_mapping[age])
+            if len(self.connection.client_list()) < (self.max_connections - 1):
+                return
 
     def save_route53_details(self, item_details):
         hash_key = "%s:%s:%s" % (self.route53_hash_prefix,

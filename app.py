@@ -21,6 +21,7 @@ redis_handler = dikhao.database.redis_handler.RedisHandler(
     port=config.REDIS_PORT_NO,
     password=config.REDIS_PASSWORD,
     timeout=config.REDIS_TIMEOUT,
+    max_connections=config.REDIS_MAX_CONNECTIONS,
 )
 
 
@@ -33,6 +34,7 @@ def status():
 
 
 def sync_everything():
+    redis_handler.close_extra_connections()
     thread_list = []
     if not config.NO_ROUTE53:
         route53_handler = dikhao.aws.route53.Route53Handler(
@@ -85,6 +87,7 @@ def search(input_lookup):
     """
     Perform lookup for given input in redis database
     """
+    redis_handler.close_extra_connections()
     match_dict = dikhao.search.search(redis_handler, host=input_lookup)
     if match_dict:
         details = dikhao.search.formatted_output(redis_handler, match_dict)
