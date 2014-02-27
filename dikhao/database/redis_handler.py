@@ -19,9 +19,11 @@ class RedisHandler(object):
         self.index_prefix = 'aws:index'                      ## Suffix: index_item
         self.lock_hash_key = 'dikhao:lock_sync'
 
-    def close_extra_connections(self):
+    def close_extra_connections(self, max_connections=None):
+        if max_connections == None:
+            max_connections = self.max_connections
         client_list = self.connection.client_list()
-        if len(client_list) < (self.max_connections - 1):
+        if len(client_list) < self.max_connections:
             return
         age_address_mapping = {}
         for client in client_list:
@@ -30,7 +32,7 @@ class RedisHandler(object):
         age_list.sort(reverse=True)
         for age in age_list:
             self.connection.client_kill(age_address_mapping[age])
-            if len(self.connection.client_list()) < (self.max_connections - 1):
+            if len(self.connection.client_list()) < self.max_connections:
                 return
 
     def save_route53_details(self, item_details):
