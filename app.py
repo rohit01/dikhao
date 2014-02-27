@@ -5,6 +5,7 @@
 
 import os
 import time
+import redis
 import gevent
 import config
 import dikhao.search
@@ -34,30 +35,34 @@ def status():
 
 
 def sync_everything():
-    redis_handler.close_extra_connections()
-    thread_list = []
-    if not config.NO_ROUTE53:
-        route53_handler = dikhao.aws.route53.Route53Handler(
-            apikey=config.AWS_ACCESS_KEY_ID,
-            apisecret=config.AWS_SECRET_ACCESS_KEY)
-        new_threads = dikhao.sync.sync_route53(route53_handler, redis_handler,
-            config.HOSTED_ZONES, expire=config.EXPIRE_DURATION, ttl=config.TTL)
-        thread_list.extend(new_threads)
-    if not config.NO_EC2:
-        new_threads = dikhao.sync.sync_ec2(redis_handler, apikey=config.AWS_ACCESS_KEY_ID,
-            apisecret=config.AWS_SECRET_ACCESS_KEY, regions=config.REGIONS,
-            expire=config.EXPIRE_DURATION)
-        thread_list.extend(new_threads)
-    print 'Sync Started... . . .  .  .   .     .     .'
-    gevent.joinall(thread_list, timeout=config.SYNC_TIMEOUT)
-    gevent.killall(thread_list)
-    print 'Cleanup stale records initiated...'
-    dikhao.sync.clean_stale_entries(redis_handler,
-                             clean_route53=not config.NO_ROUTE53,
-                             clean_ec2=not config.NO_EC2)
-    print 'Details saved. Indexing records!'
-    dikhao.sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
-    redis_handler.delete_lock(timeout=config.MIN_SYNC_GAP)
+    try:
+        redis_handler.close_extra_connections()
+        thread_list = []
+        if not config.NO_ROUTE53:
+            route53_handler = dikhao.aws.route53.Route53Handler(
+                apikey=config.AWS_ACCESS_KEY_ID,
+                apisecret=config.AWS_SECRET_ACCESS_KEY)
+            new_threads = dikhao.sync.sync_route53(route53_handler, redis_handler,
+                config.HOSTED_ZONES, expire=config.EXPIRE_DURATION, ttl=config.TTL)
+            thread_list.extend(new_threads)
+        if not config.NO_EC2:
+            new_threads = dikhao.sync.sync_ec2(redis_handler, apikey=config.AWS_ACCESS_KEY_ID,
+                apisecret=config.AWS_SECRET_ACCESS_KEY, regions=config.REGIONS,
+                expire=config.EXPIRE_DURATION)
+            thread_list.extend(new_threads)
+        print 'Sync Started... . . .  .  .   .     .     .'
+        gevent.joinall(thread_list, timeout=config.SYNC_TIMEOUT)
+        gevent.killall(thread_list)
+        print 'Cleanup stale records initiated...'
+        dikhao.sync.clean_stale_entries(redis_handler,
+                                 clean_route53=not config.NO_ROUTE53,
+                                 clean_ec2=not config.NO_EC2)
+        print 'Details saved. Indexing records!'
+        dikhao.sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
+        redis_handler.delete_lock(timeout=config.MIN_SYNC_GAP)
+    except redis.ConnectionError:
+        print 'Redis ConnectionError happened. Closing all active connections'
+        redis_handler.close_extra_connections(max_connections=0)
     print 'Complete'
 
 
@@ -87,13 +92,16 @@ def search(input_lookup):
     """
     Perform lookup for given input in redis database
     """
-    redis_handler.close_extra_connections()
-    match_dict = dikhao.search.search(redis_handler, host=input_lookup)
-    if match_dict:
-        details = dikhao.search.formatted_output(redis_handler, match_dict)
-        return dikhao.search.string_details(details)
-    else:
-        return 'Sorry! No entry found'
+    try:
+        redis_handler.close_extra_connections()
+        match_dict = dikhao.search.search(redis_handler, host=input_lookup)
+        if match_dict:
+            details = dikhao.search.formatted_output(redis_handler, match_dict)
+            return dikhao.search.string_details(details)
+    except redis.ConnectionError:
+        print 'Redis ConnectionError happened. Closing all active connections'
+        redis_handler.close_extra_connections(max_connections=0)
+    return 'Sorry! No entry found'
 
 
 if __name__ == '__main__':
