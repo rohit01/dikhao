@@ -60,8 +60,8 @@ def sync_everything():
         print 'Details saved. Indexing records!'
         dikhao.sync.index_records(redis_handler, expire=config.EXPIRE_DURATION)
         redis_handler.delete_lock(timeout=config.MIN_SYNC_GAP)
-    except redis.ConnectionError:
-        print 'Redis ConnectionError happened. Closing all active connections'
+    except redis.ResponseError:
+        print 'Redis ResponseError happened. Closing all active connections'
         redis_handler.close_extra_connections(max_connections=0)
     print 'Complete'
 
@@ -98,8 +98,8 @@ def search(input_lookup):
         if match_dict:
             details = dikhao.search.formatted_output(redis_handler, match_dict)
             return dikhao.search.string_details(details)
-    except redis.ConnectionError:
-        print 'Redis ConnectionError happened. Closing all active connections'
+    except redis.ResponseError:
+        print 'Redis ResponseError happened. Closing all active connections'
         redis_handler.close_extra_connections(max_connections=0)
     return 'Sorry! No entry found'
 
