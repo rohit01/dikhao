@@ -9,14 +9,14 @@
 import os
 import sys
 import gevent
-import setup
+import dikhao.config
 import dikhao.util
 import dikhao.sync
 import dikhao.aws.route53
 
 
 VERSION = """Version: %s,
-Author: Rohit Gupta - @rohit01""" % setup.VERSION
+Author: Rohit Gupta - @rohit01""" % dikhao.config.VERSION
 DESCRIPTION = """Utility to sync route53, ec2 details in redis. The local
 redis cache helps in avoiding slow AWS API calls, thereby making the dns lookup
 much faster. This program should be deployed as a cron job.

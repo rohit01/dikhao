@@ -7,7 +7,7 @@ import os
 import time
 import redis
 import gevent
-import config
+import dikhao.config as config
 import dikhao.search
 import dikhao.sync
 import dikhao.database

@@ -6,13 +6,13 @@
 
 import os
 import sys
-import setup
+import dikhao.config
 import dikhao.util
 import dikhao.search
 
 
 VERSION = """Version: %s,
-Author: Rohit Gupta - @rohit01""" % setup.VERSION
+Author: Rohit Gupta - @rohit01""" % dikhao.config.VERSION
 DESCRIPTION = """Program to perform dns and reverse dns lookup from locally
 synced redis DB.
 """
