@@ -1,6 +1,6 @@
 ## Dikhao: A new way to look at EC2 & Route53
 
-Dikhao is a project to map every EC2 resource will all related components and provide really fast lookups for the same.
+Dikhao is a project to cache every EC2 resource, find relations between them, and provide really fast lookups using Redis. It can be used as CLI commands (*pip install dikhao*), deployable in heroku and has a ready to use hubot plugin.
 
 ### Sample run with hubot plugin:
 
