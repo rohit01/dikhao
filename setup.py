@@ -8,8 +8,18 @@
 import setuptools
 import config
 
-requires = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
+REQUIRES = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
             'gevent>=1.0', 'Flask==0.10.1', ]
+CLASSIFIERS = [
+    "Programming Language :: Python",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License",
+]
 
 
 if __name__ == '__main__':
@@ -23,18 +33,9 @@ if __name__ == '__main__':
         author_email = "hello@rohit.io",
         url = "https://github.com/rohit01/dikhao",
         keywords = ["dikhao", "ec2", "aws", "route53", "platform", "iaas"],
-        install_requires = requires,
+        install_requires = REQUIRES,
         packages=["dikhao", ],
-        classifiers = [
-            "Programming Language :: Python",
-            "Operating System :: OS Independent",
-            "License :: OSI Approved :: MIT License",
-            "Intended Audience :: Developers",
-            "Development Status :: 4 - Beta",
-            "Environment :: Console",
-            "Topic :: Utilities",
-            "License :: OSI Approved :: MIT License"
-        ],
+        classifiers = CLASSIFIERS,
         entry_points="""
             [console_scripts]
             padho=padho
