@@ -1,7 +1,5 @@
 import os
 
-VERSION = "0.0.10"
-
 ## Set as true to run on debug mode
 DEBUG = os.environ.get('DEBUG', False)
 

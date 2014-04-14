@@ -13,7 +13,7 @@ import dikhao.sync
 import dikhao.database
 import dikhao.aws.route53
 from flask import Flask
-from setup import VERSION
+from dikhao import __version__
 
 
 app = Flask(__name__)
@@ -31,7 +31,7 @@ def status():
     """
     Returns the status page
     """
-    return 'Ok - Version: %s' % VERSION
+    return 'Ok - Version: %s' % __version__
 
 
 def sync_everything():

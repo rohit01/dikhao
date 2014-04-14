@@ -9,14 +9,13 @@
 import os
 import sys
 import gevent
-import dikhao.config
 import dikhao.util
 import dikhao.sync
 import dikhao.aws.route53
+from dikhao import __version__
 
 
-VERSION = """Version: %s, Author: Rohit Gupta - @rohit01""" \
-          % dikhao.config.VERSION
+VERSION = """Version: %s, Author: Rohit Gupta - @rohit01""" % __version__
 DESCRIPTION = """Utility to sync route53, ec2 details in redis. The local
 redis cache helps in avoiding slow AWS API calls, thereby making the dns lookup
 much faster. This program should be deployed as a cron job.
@@ -119,7 +118,7 @@ def validate_arguments(option_args):
     return arguments
 
 
-if __name__ == '__main__':
+def run():
     option_args = dikhao.util.parse_options(options=OPTIONS,
         flag_options=FLAG_OPTIONS, description=DESCRIPTION, usage=USAGE,
         version=VERSION)
@@ -156,3 +155,7 @@ if __name__ == '__main__':
     dikhao.sync.index_records(redis_handler,
                               expire=arguments['expire_duration'])
     print 'Complete'
+
+
+if __name__ == '__main__':
+    run()

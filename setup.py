@@ -7,7 +7,7 @@
 
 import os.path
 import setuptools
-import dikhao.config
+from dikhao import __version__
 
 
 CLASSIFIERS = [
@@ -28,8 +28,10 @@ with open(fname) as f:
 
 setuptools.setup(
     name = "dikhao",
-    py_modules = ["padho", "batao"],
-    version = dikhao.config.VERSION,
+    py_modules = ["padho", "batao", "dikhao.aws", "dikhao.aws.ec2",
+                  "dikhao.aws.route53", "dikhao.database",
+                  "dikhao.database.redis_handler", ],
+    version = __version__,
     description = "Dikhao: A quick view of all related EC2 & Route53"
                   " resources",
     author = "Rohit Gupta",
@@ -41,8 +43,8 @@ setuptools.setup(
     classifiers = CLASSIFIERS,
     entry_points="""
         [console_scripts]
-        padho=padho
-        batao=batao
+        padho=padho:run
+        batao=batao:run
     """,
     long_description = """
         Dikhao - A quick view of all related EC2 & Route53 resources.

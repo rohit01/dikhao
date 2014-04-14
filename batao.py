@@ -6,13 +6,12 @@
 
 import os
 import sys
-import dikhao.config
 import dikhao.util
 import dikhao.search
+from dikhao import __version__
 
 
-VERSION = """Version: %s, Author: Rohit Gupta - @rohit01""" \
-          % dikhao.config.VERSION
+VERSION = """Version: %s, Author: Rohit Gupta - @rohit01""" % __version__
 DESCRIPTION = """Program to perform dns and reverse dns lookup from locally
 synced redis DB.
 """
@@ -28,6 +27,7 @@ DEFAULTS = {
     "redis_host": "127.0.0.1",
     "redis_port_no": 6379,
 }
+
 
 def validate_arguments(option_args):
     input_lookup = option_args.input_lookup or DEFAULTS.get('input_lookup', None)
@@ -48,7 +48,8 @@ def validate_arguments(option_args):
         sys.exit(1)
     return arguments
 
-if __name__ == '__main__':
+
+def run():
     option_args = dikhao.util.parse_options(options=OPTIONS,
         description=DESCRIPTION, usage=USAGE, version=VERSION)
     arguments = validate_arguments(option_args)
@@ -63,3 +64,6 @@ if __name__ == '__main__':
         print 'Sorry! No entry found'
         sys.exit(1)
 
+
+if __name__ == '__main__':
+    run()
