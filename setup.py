@@ -5,12 +5,11 @@
 # $ python setup.py sdist bdist_wininst upload
 # Author - @rohit01
 
+import os.path
 import setuptools
 import dikhao.config
 
 
-REQUIRES = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
-            'gevent>=1.0', 'Flask==0.10.1', ]
 CLASSIFIERS = [
     "Programming Language :: Python",
     "Operating System :: OS Independent",
@@ -22,31 +21,34 @@ CLASSIFIERS = [
     "License :: OSI Approved :: MIT License",
 ]
 
+# read requirements
+fname = os.path.join(os.path.dirname(__file__), 'requirements.txt')
+with open(fname) as f:
+    requires = list(map(lambda l: l.strip(), f.readlines()))
 
-if __name__ == '__main__':
-    setuptools.setup(
-        name = "dikhao",
-        py_modules = ["padho", "batao"],
-        version = dikhao.config.VERSION,
-        description = "Dikhao: A quick view of all related EC2 & Route53"
-                      " resources",
-        author = "Rohit Gupta",
-        author_email = "hello@rohit.io",
-        url = "https://github.com/rohit01/dikhao",
-        keywords = ["dikhao", "ec2", "aws", "route53", "platform", "iaas"],
-        install_requires = REQUIRES,
-        packages=["dikhao", ],
-        classifiers = CLASSIFIERS,
-        entry_points="""
-            [console_scripts]
-            padho=padho
-            batao=batao
-        """,
-        long_description = """
-            Dikhao - A quick view of all related EC2 & Route53 resources.
-            Main components:
-            1. padho.py: It syncs all ec2 & route53 data into redis. Deploy this
-                        as a cron job
-            2. batao.py: Easy to use program to perform lookups on demand
-        """,
-    )
+setuptools.setup(
+    name = "dikhao",
+    py_modules = ["padho", "batao"],
+    version = dikhao.config.VERSION,
+    description = "Dikhao: A quick view of all related EC2 & Route53"
+                  " resources",
+    author = "Rohit Gupta",
+    author_email = "hello@rohit.io",
+    url = "https://github.com/rohit01/dikhao",
+    keywords = ["dikhao", "ec2", "aws", "route53", "platform", "iaas"],
+    install_requires = requires,
+    packages=["dikhao", ],
+    classifiers = CLASSIFIERS,
+    entry_points="""
+        [console_scripts]
+        padho=padho
+        batao=batao
+    """,
+    long_description = """
+        Dikhao - A quick view of all related EC2 & Route53 resources.
+        Main components:
+        1. padho.py: It syncs all ec2 & route53 data into redis. Deploy this
+                    as a cron job
+        2. batao.py: Easy to use program to perform lookups on demand
+    """,
+)
