@@ -6,7 +6,8 @@
 # Author - @rohit01
 
 import setuptools
-import config
+import dikhao.config
+
 
 REQUIRES = ['boto>=2.24.0', 'redis>=2.9.1', 'prettytable>=0.7.2',
             'gevent>=1.0', 'Flask==0.10.1', ]
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     setuptools.setup(
         name = "dikhao",
         py_modules = ["padho", "batao"],
-        version = config.VERSION,
+        version = dikhao.config.VERSION,
         description = "Dikhao: A quick view of all related EC2 & Route53"
                       " resources",
         author = "Rohit Gupta",
