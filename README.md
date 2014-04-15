@@ -1,10 +1,19 @@
 ## Dikhao: A new way to look at EC2 & Route53
 
-Dikhao is a project to cache every EC2 resource, find relations between them, and provide really fast lookups using Redis. It can be used as CLI commands (*pip install dikhao*), deployable in heroku and has a ready to use hubot plugin.
+Dikhao is a project to cache every EC2 resource, find relations between them, and provide really fast lookups. It can be installed as a python command line utility (*pip install dikhao*), deployable in heroku and has a ready to use hubot plugin.
 
-### Sample run with hubot plugin:
+---
 
-*@hubot batao dns1.rohit.io*
+#### Sample execute examples to search details about- 'dns1.rohit.io':
+
+* CLI command:
+ * $ batao -i dns1.rohit.io
+* [Hubot](https://hubot.github.com/) bot in hipchat:
+ * @hubot batao dns1.rohit.io
+* Heroku App:
+ * http://&lt;app_name&gt;.herokuapp.com/lookup/dns1.rohit.io
+
+#### Details displayed:
 
 <pre>
 Route53 Details (210 secs ago):
@@ -49,7 +58,38 @@ ELB Details (266 secs ago):
 +----------+-------------------------------------------------+-------------+--------------+
 </pre>
 
+---
 
+#### How to install **dikhao** as:
+
+1. A CLI tool:
+    * *dikhao* is available for installation using PyPi. Once installed, it provides two commands: *padho* and *batao*. *padho* syncs AWS details into redis and *batao* can be used for searching the same.
+
+    (venv)$ pip install dikhao
+
+2. A heroku app:
+
+    $ git clone git@github.com:rohit01/dikhao.git
+    $ cd dikhao
+    $ heroku create {app_name} -s cedar
+    $ git push heroku master
+    $ heroku addons:add rediscloud --app {app_name}
+    $ heroku ps:scale web=1
+
+    * Add credentials:
+
+    $ heroku config:set AWS_ACCESS_KEY_ID='&lt;ACCESS-KEY&gt;'
+    $ heroku config:set AWS_SECRET_ACCESS_KEY='&lt;SECRET-KEY&gt;'
+    $ heroku config:set REDIS_HOST='&lt;rediscloud-hostname&gt;'
+    $ heroku config:set REDIS_PORT_NO='&lt;rediscloud-port&gt;'
+    $ heroku config:set REDIS_PASSWORD='&lt;rediscloud-password&gt;'
+
+3. A hubot agent:
+    * Deploy *dikhao* as a heroku app
+    * Add the heroku application url in [coffee script](https://github.com/rohit01/dikhao/blob/master/hubot/dikhao.coffee)
+    * Integrate the coffee script in your existing hubot setup
+
+---
 
 #### Current features:
 1. Sync all Route53 records in redis
