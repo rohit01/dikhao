@@ -98,7 +98,7 @@ ELB Details (266 secs ago):
 1. Supported AWS services:
     * EC2: Instance, Elastic IP and ELB
     * Route53: All DNS types
-2. Search input value is based on Indexed item. Dikhao supports indexing based on the following: ([configurable](https://github.com/rohit01/dikhao/blob/master/dikhao/sync.py#L16))
+2. Search input value can be any one of the indexed item. Dikhao supports indexing based on the following: ([configurable](https://github.com/rohit01/dikhao/blob/master/dikhao/sync.py#L16))
     * Route 53: DNS record name
     * Route 53: DNS record value
     * EC2 Instance: ID
@@ -109,5 +109,10 @@ ELB Details (266 secs ago):
     * EC2 ELB: Name
     * EC2 ELB: DNS
     * EC2: Elastic IP
-3. Provides configurable syncing options like cache expire based on ttl/duration. Check the [flask app config file](https://github.com/rohit01/dikhao/blob/master/dikhao/config.py) or command line option help (*$ padho --help*) for details.
+3. Provides many syncing options to help cater different needs. Few notable configurable options:
+    * NO_EC2: If True, EC2 details will not be synced. Default: False
+    * NO_ROUTE53: If True, Route53 details will not be synced. Default: False
+    * HOSTED_ZONES: List of comma separated hosted zone names to be synced. Default: all
+    * REGIONS: List of comma separated EC2 region names to be synced. Default: all
+    * EXPIRE_DURATION: Duration for which details are cached. Default: 1 Day
 
