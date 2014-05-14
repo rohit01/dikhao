@@ -4,14 +4,14 @@ Dikhao is a project to cache every EC2 resource, find relations between them, an
 
 ---
 
-#### Sample execute examples to search details about- 'dns1.rohit.io':
+#### Sample execute examples to search details about- 'route53.rohit.io':
 
 * CLI command:
- * $ batao -i dns1.rohit.io
+ * $ batao -i route53.rohit.io
 * [Hubot](https://hubot.github.com/) bot in hipchat:
- * @hubot batao dns1.rohit.io
+ * @hubot batao route53.rohit.io
 * Heroku App:
- * http://&lt;app_name&gt;.herokuapp.com/lookup/dns1.rohit.io
+ * http://&lt;app_name&gt;.herokuapp.com/lookup/route53.rohit.io
 
 #### Details displayed:
 
@@ -63,13 +63,13 @@ ELB Details (266 secs ago):
 ### Install **dikhao** as:
 
 * **A CLI tool:**
-    * *dikhao* is available for installation using PyPi. Once installed, it provides two commands: *padho* and *batao*. *padho* syncs AWS details into redis and *batao* can be used for searching the same.
+    *dikhao* is available for installation using PyPi. Once installed, it provides two commands: *padho* and *batao*. *padho* syncs AWS details into redis and *batao* can be used for searching the same.
 
 <pre>
     (venv)$ pip install dikhao
 </pre>
 
- * **A heroku app:**
+* **A heroku app:** Use install script *install.sh* for guided installation. Manual install instructions:
 
 <pre>
     $ git clone git@github.com:rohit01/dikhao.git
@@ -85,6 +85,7 @@ ELB Details (266 secs ago):
     $ heroku config:set REDIS_HOST='&lt;rediscloud-hostname&gt;'
     $ heroku config:set REDIS_PORT_NO='&lt;rediscloud-port&gt;'
     $ heroku config:set REDIS_PASSWORD='&lt;rediscloud-password&gt;'
+    $ heroku config:set PORT='80'
 </pre>
 
 * **A hubot agent:**
