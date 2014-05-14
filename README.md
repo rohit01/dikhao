@@ -1,19 +1,21 @@
 ## Dikhao: A new way to look at EC2 & Route53
 
-Dikhao is a project to cache every EC2 resource, find relations between them, and provide really fast lookups. It can be installed as a python command line utility (*pip install dikhao*), deployable in heroku and has a ready to use hubot plugin.
+Dikhao is a project to cache every EC2 resource, find relations between them, and provide really fast lookups. It can be installed as a python command line utility (*pip install dikhao*), deployable in [Heroku](https://heroku.com/) and has a ready to use [hubot](https://hubot.github.com/) plugin.
 
 ---
 
-#### Sample execute examples to search details about- 'route53.rohit.io':
+#### Example search:
 
 * CLI command:
- * $ batao -i route53.rohit.io
+    ``$ batao -i route53.rohit.io``
 * [Hubot](https://hubot.github.com/) bot in hipchat:
- * @hubot batao route53.rohit.io
+    ``@hubot batao route53.rohit.io``
 * Heroku App:
- * http://&lt;app_name&gt;.herokuapp.com/lookup/route53.rohit.io
+    ``http://&lt;app_name&gt;.herokuapp.com/lookup/route53.rohit.io``
 
-#### Details displayed:
+*Note:* Key *‘route53.rohit.io’* can be anything from the configurable list of indexed items (given below).
+
+#### Example output:
 
 <pre>
 Route53 Details (210 secs ago):
@@ -60,16 +62,19 @@ ELB Details (266 secs ago):
 
 ---
 
-### Install **dikhao** as:
+### Installation:
 
-* **A CLI tool:**
+* **CLI Tool:**
     *dikhao* is available for installation using PyPi. Once installed, it provides two commands: *padho* and *batao*. *padho* syncs AWS details into redis and *batao* can be used for searching the same.
 
 <pre>
     (venv)$ pip install dikhao
 </pre>
 
-* **A heroku app:** Use install script *install.sh* for guided installation. Manual install instructions:
+* **Heroku Application:**
+    Clone respsitory and use the automated install script install.sh.
+
+    Manual install instructions:
 
 <pre>
     $ git clone git@github.com:rohit01/dikhao.git
@@ -79,7 +84,7 @@ ELB Details (266 secs ago):
     $ heroku addons:add rediscloud --app {app_name}
     $ heroku ps:scale web=1
 
-<b>Add credentials:</b>
+    <b>Add credentials:</b>
     $ heroku config:set AWS_ACCESS_KEY_ID='&lt;ACCESS-KEY&gt;'
     $ heroku config:set AWS_SECRET_ACCESS_KEY='&lt;SECRET-KEY&gt;'
     $ heroku config:set REDIS_HOST='&lt;rediscloud-hostname&gt;'
@@ -88,7 +93,7 @@ ELB Details (266 secs ago):
     $ heroku config:set PORT='80'
 </pre>
 
-* **A hubot agent:**
+* **Hubot Agent:**
     * Deploy *dikhao* as a heroku app
     * Add the *heroku application url* in [coffee script](https://github.com/rohit01/dikhao/blob/master/hubot/dikhao.coffee)
     * Integrate the coffee script in your existing hubot setup
@@ -97,23 +102,23 @@ ELB Details (266 secs ago):
 
 #### Current features:
 1. Supported AWS services:
-    * EC2: Instance, Elastic IP and ELB
-    * Route53: All DNS types
-2. Search input value can be any one of the indexed item. Dikhao supports indexing based on the following: ([configurable](https://github.com/rohit01/dikhao/blob/master/dikhao/sync.py#L16))
-    * Route 53: DNS record name
-    * Route 53: DNS record value
-    * EC2 Instance: ID
-    * EC2 Instance: IP address
-    * EC2 Instance: Private IP address
-    * EC2 Instance: Public DNS
-    * EC2 Instance: Private DNS
-    * EC2 ELB: Name
-    * EC2 ELB: DNS
-    * EC2: Elastic IP
+    * EC2 - Instance, Elastic IP and ELB
+    * Route53 - All DNS types
+2. Search input value can be any one of the indexed item. Dikhao supports indexing based on the following ([configurable](https://github.com/rohit01/dikhao/blob/master/dikhao/sync.py#L16)):
+    * Route 53 - DNS record name
+    * Route 53 - DNS record value
+    * EC2 Instance - ID
+    * EC2 Instance - IP address
+    * EC2 Instance - Private IP address
+    * EC2 Instance - Public DNS
+    * EC2 Instance - Private DNS
+    * EC2 ELB - Name
+    * EC2 ELB - DNS
+    * EC2 - Elastic IP
 3. Provides many syncing options to help cater different needs. Few notable configurable options:
-    * NO_EC2: If True, EC2 details will not be synced. Default: False
-    * NO_ROUTE53: If True, Route53 details will not be synced. Default: False
-    * HOSTED_ZONES: List of comma separated hosted zone names to be synced. Default: all
-    * REGIONS: List of comma separated EC2 region names to be synced. Default: all
-    * EXPIRE_DURATION: Duration for which details are cached. Default: 1 Day
+    * NO_EC2 - If True, EC2 details will not be synced. Default: False
+    * NO_ROUTE53 - If True, Route53 details will not be synced. Default: False
+    * HOSTED_ZONES - List of comma separated hosted zone names to be synced. Default: all
+    * REGIONS - List of comma separated EC2 region names to be synced. Default: all
+    * EXPIRE_DURATION - Duration for which details are cached. Default: 1 Day
 
