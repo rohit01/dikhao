@@ -38,7 +38,6 @@ def status():
     """
     Returns the status page
     """
-    raise Exception("Test Sentry 12345")
     return 'Ok - Version: %s' % __version__
 
 
