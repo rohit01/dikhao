@@ -11,7 +11,7 @@ Dikhao is a project to cache every EC2 resource, find relations between them, an
 * [Hubot](https://hubot.github.com/) bot in hipchat:
     ``@hubot batao route53.rohit.io``
 * Heroku App:
-    ``http://&lt;app_name&gt;.herokuapp.com/lookup/route53.rohit.io``
+    ``http://<app_name>.herokuapp.com/lookup/route53.rohit.io``
 
 *Note:* Key *‘route53.rohit.io’* can be anything from the configurable list of indexed items (given below).
 
