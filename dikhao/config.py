@@ -36,3 +36,6 @@ TTL = False
 ## Set as True if you dont want to sync both
 NO_EC2 = False
 NO_ROUTE53 = False
+
+## Sentry for catching exceptions
+SENTRY_DSN = os.environ.get('SENTRY_DSN', None)

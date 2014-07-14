@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 # Python flask application to be deployed as a heroku application
+#
 # Author - @rohit01
+# -----------------
 
 import os
 import time
@@ -12,8 +14,10 @@ import dikhao.search
 import dikhao.sync
 import dikhao.database
 import dikhao.aws.route53
+
 from flask import Flask
 from dikhao import __version__
+from raven.contrib.flask import Sentry
 
 
 app = Flask(__name__)
@@ -24,6 +28,9 @@ redis_handler = dikhao.database.redis_handler.RedisHandler(
     timeout=config.REDIS_TIMEOUT,
     max_connections=config.REDIS_MAX_CONNECTIONS,
 )
+if config.SENTRY_DSN:
+    app.config['SENTRY_DSN'] = config.SENTRY_DSN
+    Sentry(app)
 
 
 @app.route("/")
@@ -31,6 +38,7 @@ def status():
     """
     Returns the status page
     """
+    raise Exception("Test Sentry 12345")
     return 'Ok - Version: %s' % __version__
 
 
