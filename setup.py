@@ -2,7 +2,7 @@
 #
 # Python installation script
 # Update pypi package after every update:
-# $ python setup.py sdist bdist_wininst upload
+# $ python setup.py sdist upload
 # Author - @rohit01
 
 import os.path
