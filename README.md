@@ -87,6 +87,7 @@ ELB Details (266 secs ago):
     <b>Add credentials:</b>
     $ heroku config:set AWS_ACCESS_KEY_ID='&lt;ACCESS-KEY&gt;'
     $ heroku config:set AWS_SECRET_ACCESS_KEY='&lt;SECRET-KEY&gt;'
+    $ heroku config:set SENTRY_DSN='&lt;SENTRY_DSN&gt;'
     $ heroku config:set REDIS_HOST='&lt;rediscloud-hostname&gt;'
     $ heroku config:set REDIS_PORT_NO='&lt;rediscloud-port&gt;'
     $ heroku config:set REDIS_PASSWORD='&lt;rediscloud-password&gt;'
