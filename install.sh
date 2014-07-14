@@ -51,10 +51,15 @@ echo -e "Input AWS Access key id: \c"
 read AWS_ACCESS_KEY_ID
 echo -e "Input AWS secret access key: \c"
 read AWS_SECRET_ACCESS_KEY
+echo -e "Input SENTRY_DSN for exception tracking by Sentry: \c"
+read SENTRY_DSN
 
 echo "Setting AWS and rediscloud settings..."
 heroku config:set AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
 heroku config:set AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+if [ "X${SENTRY_DSN}" != "X" ]; then
+    heroku config:set SENTRY_DSN="${SENTRY_DSN}"
+fi
 heroku config:set REDIS_HOST="${REDIS_HOSTNAME}"
 heroku config:set REDIS_PORT_NO="${REDIS_PORT}"
 heroku config:set REDIS_PASSWORD="${REDIS_PASSWORD}"
