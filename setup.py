@@ -41,6 +41,9 @@ setuptools.setup(
     install_requires = requires,
     packages=["dikhao", ],
     classifiers = CLASSIFIERS,
+    scripts = [
+       'requirements.txt',
+    ],
     entry_points="""
         [console_scripts]
         padho=padho:run
